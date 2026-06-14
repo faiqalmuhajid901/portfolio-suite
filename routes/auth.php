@@ -1,10 +1,30 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 Route::middleware('guest')->group(function () {
+    Route::post('login', function (Request $request) {
+    $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+    ]);
+
+    if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        throw ValidationException::withMessages([
+            'email' => 'Email atau password salah.',
+        ]);
+    }
+
+    $request->session()->regenerate();
+
+    return redirect()->intended('/dashboard');
+})->name('login.post');
+
     Volt::route('register', 'pages.auth.register')
         ->name('register');
 

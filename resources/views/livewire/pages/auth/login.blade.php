@@ -49,17 +49,18 @@ new #[Layout('layouts.guest')] class extends Component
     {{-- Session Status --}}
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form wire:submit="login">
+    <form method="POST" action="{{ route('login.post') }}">
+    @csrf
         {{-- Email Address --}}
         <div>
             <x-input-label for="email" :value="__('Email')" />
 
-            <x-text-input
-                wire:model="form.email"
+            <input
+                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm mt-1 block w-full"
                 id="email"
-                class="mt-1 block w-full"
                 type="email"
                 name="email"
+                value="{{ old('email') }}"
                 required
                 autofocus
                 autocomplete="username"
@@ -72,10 +73,9 @@ new #[Layout('layouts.guest')] class extends Component
         <div class="mt-4">
             <x-input-label for="password" :value="__('Password')" />
 
-            <x-text-input
-                wire:model="form.password"
+            <input
+                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm mt-1 block w-full"
                 id="password"
-                class="mt-1 block w-full"
                 type="password"
                 name="password"
                 required
@@ -89,12 +89,11 @@ new #[Layout('layouts.guest')] class extends Component
         <div class="mt-4 block">
             <label for="remember" class="inline-flex items-center">
                 <input
-                    wire:model="form.remember"
-                    id="remember"
-                    type="checkbox"
-                    class="rounded border-gray-300 text-[#7fac9f] shadow-sm focus:ring-[#7fac9f]"
-                    name="remember"
-                >
+                id="remember"
+                type="checkbox"
+                class="rounded border-gray-300 text-[#7fac9f] shadow-sm focus:ring-[#7fac9f]"
+                name="remember"
+            />
 
                 <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">
                     {{ __('Remember me') }}
