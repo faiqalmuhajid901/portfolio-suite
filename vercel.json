@@ -15,14 +15,6 @@
       "dest": "/public/build/$1"
     },
     {
-      "src": "/livewire/livewire.min.js",
-      "dest": "/public/livewire/livewire.min.js"
-    },
-    {
-      "src": "/livewire/livewire.js",
-      "dest": "/public/livewire/livewire.min.js"
-    },
-    {
       "src": "/livewire/update",
       "dest": "/api/index.php"
     },

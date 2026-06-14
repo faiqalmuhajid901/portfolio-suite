@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Livewire::setScriptRoute(function ($handle) {
-            return Route::get('/livewire/livewire.min.js', $handle);
+            return Route::get('/build/livewire/livewire.min.js', $handle);
         });
 
         Livewire::setUpdateRoute(function ($handle) {
