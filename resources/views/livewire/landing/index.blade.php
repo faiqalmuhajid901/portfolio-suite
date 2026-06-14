@@ -704,7 +704,7 @@
 
                     <div class="mt-8 flex flex-wrap justify-center gap-4">
                         <a
-                            href="https://github.com/username"
+                            href="https://github.com/faiqalmuhajid901"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:bg-slate-800 dark:text-white"
@@ -716,7 +716,7 @@
                         </a>
 
                         <a
-                            href="https://www.linkedin.com/in/username"
+                            href="https://www.linkedin.com/in/faiqalmuhajid201"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#0A66C2] shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:bg-slate-800"
@@ -728,7 +728,7 @@
                         </a>
 
                         <a
-                            href="https://www.instagram.com/username"
+                            href="https://www.instagram.com/wfaiq._"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-pink-600 shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:bg-slate-800"
