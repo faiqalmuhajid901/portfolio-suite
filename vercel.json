@@ -1,7 +1,5 @@
-﻿{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
+{
   "version": 2,
-  "framework": null,
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.9.0"
@@ -13,10 +11,6 @@
     {
       "src": "/build/(.*)",
       "dest": "/public/build/$1"
-    },
-    {
-      "src": "/livewire/update",
-      "dest": "/api/index.php"
     },
     {
       "src": "/storage/(.*)",
