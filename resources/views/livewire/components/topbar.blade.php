@@ -81,7 +81,7 @@
                             Settings
                         </a>
 
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="/logout">
                             @csrf
 
                             <button
@@ -194,7 +194,7 @@
                                 Settings
                             </a>
 
-                            <form method="POST" action="{{ route('logout') }}">
+                            <form method="POST" action="/logout">
                                 @csrf
 
                                 <button
