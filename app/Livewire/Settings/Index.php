@@ -236,53 +236,16 @@ class Index extends Component
 
     private function storeUploadedImageAsWebp($uploadedFile, string $folder, string $errorKey): string
 {
-    if (! function_exists('imagewebp')) {
-        throw ValidationException::withMessages([
-            $errorKey => 'Ekstensi GD dengan dukungan WebP belum aktif di PHP.',
-        ]);
-    }
+    $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
+    $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: $uploadedFile->extension() ?: 'jpg');
 
-    $sourcePath = $uploadedFile->getRealPath();
-    $mimeType = $uploadedFile->getMimeType();
-
-    $image = match ($mimeType) {
-        'image/jpeg', 'image/jpg' => imagecreatefromjpeg($sourcePath),
-        'image/png' => imagecreatefrompng($sourcePath),
-        'image/gif' => imagecreatefromgif($sourcePath),
-        'image/webp' => imagecreatefromwebp($sourcePath),
-        'image/bmp', 'image/x-ms-bmp' => function_exists('imagecreatefrombmp') ? imagecreatefrombmp($sourcePath) : false,
-        default => false,
-    };
-
-    if (! $image) {
-        throw ValidationException::withMessages([
-            $errorKey => 'Format gambar tidak dapat dikonversi ke WebP.',
-        ]);
-    }
-
-    if (function_exists('imagepalettetotruecolor')) {
-        imagepalettetotruecolor($image);
-    }
-
-    imagealphablending($image, true);
-    imagesavealpha($image, true);
-
-    $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . Str::uuid()->toString() . '.webp';
-
-    $converted = imagewebp($image, $tmpPath, 85);
-    imagedestroy($image);
-
-    if (! $converted) {
-        throw ValidationException::withMessages([
-            $errorKey => 'Gambar gagal dikonversi ke WebP.',
-        ]);
-    }
-
-    try {
-        return $this->uploadLocalFileToSupabase($tmpPath, $folder, 'image/webp', 'webp', $errorKey);
-    } finally {
-        @unlink($tmpPath);
-    }
+    return $this->uploadLocalFileToSupabase(
+        $uploadedFile->getRealPath(),
+        $folder,
+        $mimeType,
+        $extension,
+        $errorKey
+    );
 }
 
     public function render()
