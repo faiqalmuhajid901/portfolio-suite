@@ -4,7 +4,6 @@ namespace App\Livewire\Certificates;
 
 use App\Models\Certificate;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -45,33 +44,31 @@ class Index extends Component
     }
 
     public function saveCertificate(): void
-    {
-        $validated = $this->validate();
+{
+    $validated = $this->validate();
 
-        Storage::disk('public')->makeDirectory('certificates');
+    $pdfUrl = $this->uploadUploadedFileToSupabase(
+        $this->pdfUpload,
+        'certificates',
+        'application/pdf',
+        'pdf',
+        'pdfUpload'
+    );
 
-        $filename = Str::uuid()->toString() . '.pdf';
+    Certificate::create([
+        'user_id' => Auth::id(),
+        'title' => $validated['title'],
+        'issuer' => $validated['issuer'] ?: null,
+        'issued_at' => $validated['issuedAt'] ?: null,
+        'description' => $validated['description'] ?: null,
+        'is_visible' => $validated['isVisible'],
+        'pdf_path' => $pdfUrl,
+    ]);
 
-        $path = $this->pdfUpload->storeAs(
-            'certificates',
-            $filename,
-            'public'
-        );
+    $this->resetForm();
 
-        Certificate::create([
-            'user_id' => Auth::id(),
-            'title' => $validated['title'],
-            'issuer' => $validated['issuer'] ?: null,
-            'issued_at' => $validated['issuedAt'] ?: null,
-            'description' => $validated['description'] ?: null,
-            'is_visible' => $validated['isVisible'],
-            'pdf_path' => 'storage/' . $path,
-        ]);
-
-        $this->resetForm();
-
-        session()->flash('success', 'Sertifikat berhasil diupload.');
-    }
+    session()->flash('success', 'Sertifikat berhasil diupload.');
+}
 
     public function toggleVisibility(int $certificateId): void
     {
@@ -97,7 +94,6 @@ class Index extends Component
         }
 
         if ($certificate->pdf_path && Str::startsWith($certificate->pdf_path, 'storage/certificates/')) {
-            Storage::disk('public')->delete(Str::after($certificate->pdf_path, 'storage/'));
         }
 
         $certificate->delete();

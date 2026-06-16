@@ -4,7 +4,6 @@ namespace App\Livewire\Settings;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -152,7 +151,6 @@ class Index extends Component
         );
 
         if ($oldBackground && Str::startsWith($oldBackground, 'storage/hero-backgrounds/')) {
-            Storage::disk('public')->delete(Str::after($oldBackground, 'storage/'));
         }
 
         $this->reset('heroBackgroundUpload');
@@ -195,7 +193,6 @@ class Index extends Component
         );
 
         if ($oldAvatar && Str::startsWith($oldAvatar, 'storage/profile-photos/')) {
-            Storage::disk('public')->delete(Str::after($oldAvatar, 'storage/'));
         }
 
         $this->reset('photoUpload');
@@ -238,58 +235,55 @@ class Index extends Component
     }
 
     private function storeUploadedImageAsWebp($uploadedFile, string $folder, string $errorKey): string
-    {
-        if (! function_exists('imagewebp')) {
-            throw ValidationException::withMessages([
-                $errorKey => 'Ekstensi GD dengan dukungan WebP belum aktif di PHP.',
-            ]);
-        }
-
-        $sourcePath = $uploadedFile->getRealPath();
-        $mimeType = $uploadedFile->getMimeType();
-
-        $image = match ($mimeType) {
-            'image/jpeg', 'image/jpg' => imagecreatefromjpeg($sourcePath),
-            'image/png' => imagecreatefrompng($sourcePath),
-            'image/gif' => imagecreatefromgif($sourcePath),
-            'image/webp' => imagecreatefromwebp($sourcePath),
-            'image/bmp', 'image/x-ms-bmp' => function_exists('imagecreatefrombmp')
-                ? imagecreatefrombmp($sourcePath)
-                : false,
-            default => false,
-        };
-
-        if (! $image) {
-            throw ValidationException::withMessages([
-                $errorKey => 'Format gambar tidak dapat dikonversi ke WebP.',
-            ]);
-        }
-
-        if (function_exists('imagepalettetotruecolor')) {
-            imagepalettetotruecolor($image);
-        }
-
-        imagealphablending($image, true);
-        imagesavealpha($image, true);
-
-        Storage::disk('public')->makeDirectory($folder);
-
-        $filename = Str::uuid()->toString() . '.webp';
-        $relativePath = $folder . '/' . $filename;
-        $absolutePath = Storage::disk('public')->path($relativePath);
-
-        $converted = imagewebp($image, $absolutePath, 85);
-
-        imagedestroy($image);
-
-        if (! $converted) {
-            throw ValidationException::withMessages([
-                $errorKey => 'Gambar gagal dikonversi ke WebP.',
-            ]);
-        }
-
-        return 'storage/' . $relativePath;
+{
+    if (! function_exists('imagewebp')) {
+        throw ValidationException::withMessages([
+            $errorKey => 'Ekstensi GD dengan dukungan WebP belum aktif di PHP.',
+        ]);
     }
+
+    $sourcePath = $uploadedFile->getRealPath();
+    $mimeType = $uploadedFile->getMimeType();
+
+    $image = match ($mimeType) {
+        'image/jpeg', 'image/jpg' => imagecreatefromjpeg($sourcePath),
+        'image/png' => imagecreatefrompng($sourcePath),
+        'image/gif' => imagecreatefromgif($sourcePath),
+        'image/webp' => imagecreatefromwebp($sourcePath),
+        'image/bmp', 'image/x-ms-bmp' => function_exists('imagecreatefrombmp') ? imagecreatefrombmp($sourcePath) : false,
+        default => false,
+    };
+
+    if (! $image) {
+        throw ValidationException::withMessages([
+            $errorKey => 'Format gambar tidak dapat dikonversi ke WebP.',
+        ]);
+    }
+
+    if (function_exists('imagepalettetotruecolor')) {
+        imagepalettetotruecolor($image);
+    }
+
+    imagealphablending($image, true);
+    imagesavealpha($image, true);
+
+    $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . Str::uuid()->toString() . '.webp';
+
+    $converted = imagewebp($image, $tmpPath, 85);
+    imagedestroy($image);
+
+    if (! $converted) {
+        throw ValidationException::withMessages([
+            $errorKey => 'Gambar gagal dikonversi ke WebP.',
+        ]);
+    }
+
+    try {
+        return $this->uploadLocalFileToSupabase($tmpPath, $folder, 'image/webp', 'webp', $errorKey);
+    } finally {
+        @unlink($tmpPath);
+    }
+}
 
     public function render()
     {

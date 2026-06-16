@@ -4,7 +4,6 @@ namespace App\Livewire\Projects;
 
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -312,63 +311,59 @@ class Index extends Component
     private function deleteLocalProjectImage(?string $imagePath): void
     {
         if ($imagePath && Str::startsWith($imagePath, 'storage/projects/')) {
-            Storage::disk('public')->delete(Str::after($imagePath, 'storage/'));
         }
     }
 
     private function storeUploadedImageAsWebp($uploadedFile): string
-    {
-        if (! function_exists('imagewebp')) {
-            throw ValidationException::withMessages([
-                'imageUpload' => 'Ekstensi GD dengan dukungan WebP belum aktif di PHP.',
-            ]);
-        }
-
-        $sourcePath = $uploadedFile->getRealPath();
-        $mimeType = $uploadedFile->getMimeType();
-
-        $image = match ($mimeType) {
-            'image/jpeg', 'image/jpg' => imagecreatefromjpeg($sourcePath),
-            'image/png' => imagecreatefrompng($sourcePath),
-            'image/gif' => imagecreatefromgif($sourcePath),
-            'image/webp' => imagecreatefromwebp($sourcePath),
-            'image/bmp', 'image/x-ms-bmp' => function_exists('imagecreatefrombmp')
-                ? imagecreatefrombmp($sourcePath)
-                : false,
-            default => false,
-        };
-
-        if (! $image) {
-            throw ValidationException::withMessages([
-                'imageUpload' => 'Format gambar tidak dapat dikonversi ke WebP.',
-            ]);
-        }
-
-        if (function_exists('imagepalettetotruecolor')) {
-            imagepalettetotruecolor($image);
-        }
-
-        imagealphablending($image, true);
-        imagesavealpha($image, true);
-
-        Storage::disk('public')->makeDirectory('projects');
-
-        $filename = Str::uuid()->toString() . '.webp';
-        $relativePath = 'projects/' . $filename;
-        $absolutePath = Storage::disk('public')->path($relativePath);
-
-        $converted = imagewebp($image, $absolutePath, 85);
-
-        imagedestroy($image);
-
-        if (! $converted) {
-            throw ValidationException::withMessages([
-                'imageUpload' => 'Gambar gagal dikonversi ke WebP.',
-            ]);
-        }
-
-        return 'storage/' . $relativePath;
+{
+    if (! function_exists('imagewebp')) {
+        throw ValidationException::withMessages([
+            'imageUpload' => 'Ekstensi GD dengan dukungan WebP belum aktif di PHP.',
+        ]);
     }
+
+    $sourcePath = $uploadedFile->getRealPath();
+    $mimeType = $uploadedFile->getMimeType();
+
+    $image = match ($mimeType) {
+        'image/jpeg', 'image/jpg' => imagecreatefromjpeg($sourcePath),
+        'image/png' => imagecreatefrompng($sourcePath),
+        'image/gif' => imagecreatefromgif($sourcePath),
+        'image/webp' => imagecreatefromwebp($sourcePath),
+        'image/bmp', 'image/x-ms-bmp' => function_exists('imagecreatefrombmp') ? imagecreatefrombmp($sourcePath) : false,
+        default => false,
+    };
+
+    if (! $image) {
+        throw ValidationException::withMessages([
+            'imageUpload' => 'Format gambar tidak dapat dikonversi ke WebP.',
+        ]);
+    }
+
+    if (function_exists('imagepalettetotruecolor')) {
+        imagepalettetotruecolor($image);
+    }
+
+    imagealphablending($image, true);
+    imagesavealpha($image, true);
+
+    $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . Str::uuid()->toString() . '.webp';
+
+    $converted = imagewebp($image, $tmpPath, 85);
+    imagedestroy($image);
+
+    if (! $converted) {
+        throw ValidationException::withMessages([
+            'imageUpload' => 'Gambar gagal dikonversi ke WebP.',
+        ]);
+    }
+
+    try {
+        return $this->uploadLocalFileToSupabase($tmpPath, 'projects', 'image/webp', 'webp', 'imageUpload');
+    } finally {
+        @unlink($tmpPath);
+    }
+}
 
     public function render()
     {
