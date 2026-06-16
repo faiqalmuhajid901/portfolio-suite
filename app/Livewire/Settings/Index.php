@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Settings;
 
+use App\Livewire\Concerns\UploadsToSupabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ use Livewire\WithFileUploads;
 class Index extends Component
 {
     use WithFileUploads;
+    use UploadsToSupabase;
 
     public string $name = '';
     public string $email = '';
@@ -128,7 +130,7 @@ class Index extends Component
             'heroBackgroundUpload' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp,bmp', 'max:8192'],
         ]);
 
-        $backgroundPath = $this->storeUploadedImageAsWebp(
+        $backgroundPath = $this->storeImageAsWebpToSupabase(
             $this->heroBackgroundUpload,
             'hero-backgrounds',
             'heroBackgroundUpload'
@@ -170,7 +172,7 @@ class Index extends Component
             'photoUpload' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp,bmp', 'max:4096'],
         ]);
 
-        $avatarPath = $this->storeUploadedImageAsWebp(
+        $avatarPath = $this->storeImageAsWebpToSupabase(
             $this->photoUpload,
             'profile-photos',
             'photoUpload'
@@ -233,20 +235,6 @@ class Index extends Component
 
         session()->flash('password_success', 'Password berhasil diperbarui.');
     }
-
-    private function storeUploadedImageAsWebp($uploadedFile, string $folder, string $errorKey): string
-{
-    $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
-    $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: $uploadedFile->extension() ?: 'jpg');
-
-    return $this->uploadLocalFileToSupabase(
-        $uploadedFile->getRealPath(),
-        $folder,
-        $mimeType,
-        $extension,
-        $errorKey
-    );
-}
 
     public function render()
     {

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Certificates;
 
+use App\Livewire\Concerns\UploadsToSupabase;
 use App\Models\Certificate;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -15,6 +16,7 @@ class Index extends Component
 {
     use WithFileUploads;
     use WithPagination;
+    use UploadsToSupabase;
 
     public string $search = '';
 

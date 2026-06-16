@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Livewire\Concerns\UploadsToSupabase;
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ class Index extends Component
 {
     use WithPagination;
     use WithFileUploads;
+    use UploadsToSupabase;
 
     public string $search = '';
     public string $status = 'all';
@@ -257,7 +259,11 @@ class Index extends Component
     private function resolveProjectImage(?Project $project): string
     {
         if ($this->imageUpload) {
-            $newImage = $this->storeUploadedImageAsWebp($this->imageUpload);
+            $newImage = $this->storeImageAsWebpToSupabase(
+            $this->imageUpload,
+            'projects',
+            'imageUpload'
+        );;
 
             if ($project) {
                 $this->deleteLocalProjectImage($project->image);
@@ -310,23 +316,7 @@ class Index extends Component
 
     private function deleteLocalProjectImage(?string $imagePath): void
     {
-        if ($imagePath && Str::startsWith($imagePath, 'storage/projects/')) {
-        }
     }
-
-    private function storeUploadedImageAsWebp($uploadedFile): string
-{
-    $mimeType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
-    $extension = strtolower($uploadedFile->getClientOriginalExtension() ?: $uploadedFile->extension() ?: 'jpg');
-
-    return $this->uploadLocalFileToSupabase(
-        $uploadedFile->getRealPath(),
-        'projects',
-        $mimeType,
-        $extension,
-        'imageUpload'
-    );
-}
 
     public function render()
     {
