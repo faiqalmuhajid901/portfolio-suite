@@ -5,7 +5,6 @@ namespace App\Livewire\Certificates;
 use App\Livewire\Concerns\UploadsToSupabase;
 use App\Models\Certificate;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -46,35 +45,36 @@ class Index extends Component
     }
 
     public function saveCertificate(): void
-{
-    $validated = $this->validate();
+    {
+        $validated = $this->validate();
 
-    $pdfUrl = $this->uploadUploadedFileToSupabase(
-        $this->pdfUpload,
-        'certificates',
-        'application/pdf',
-        'pdf',
-        'pdfUpload'
-    );
+        $pdfUrl = $this->uploadUploadedFileToSupabase(
+            $this->pdfUpload,
+            'certificates',
+            'pdfUpload'
+        );
 
-    Certificate::create([
-        'user_id' => Auth::id(),
-        'title' => $validated['title'],
-        'issuer' => $validated['issuer'] ?: null,
-        'issued_at' => $validated['issuedAt'] ?: null,
-        'description' => $validated['description'] ?: null,
-        'is_visible' => $validated['isVisible'],
-        'pdf_path' => $pdfUrl,
-    ]);
+        Certificate::create([
+            'user_id' => Auth::id(),
+            'title' => $validated['title'],
+            'issuer' => $validated['issuer'] ?: null,
+            'issued_at' => $validated['issuedAt'] ?: null,
+            'description' => $validated['description'] ?: null,
+            'is_visible' => $validated['isVisible'],
+            'pdf_path' => $pdfUrl,
+        ]);
 
-    $this->resetForm();
+        $this->resetForm();
+        $this->resetPage();
 
-    session()->flash('success', 'Sertifikat berhasil diupload.');
-}
+        session()->flash('success', 'Sertifikat berhasil diupload.');
+    }
 
     public function toggleVisibility(int $certificateId): void
     {
-        $certificate = Certificate::find($certificateId);
+        $certificate = Certificate::query()
+            ->where('user_id', Auth::id())
+            ->find($certificateId);
 
         if (! $certificate) {
             return;
@@ -89,14 +89,20 @@ class Index extends Component
 
     public function deleteCertificate(int $certificateId): void
     {
-        $certificate = Certificate::find($certificateId);
+        $certificate = Certificate::query()
+            ->where('user_id', Auth::id())
+            ->find($certificateId);
 
         if (! $certificate) {
             return;
         }
 
-        if ($certificate->pdf_path && Str::startsWith($certificate->pdf_path, 'storage/certificates/')) {
-        }
+        /*
+         * File PDF disimpan di Supabase Storage.
+         * Pada tahap ini, kita hanya menghapus data certificate dari database.
+         * Kalau nanti ingin menghapus file fisik dari Supabase Storage juga,
+         * perlu dibuat method delete khusus ke Supabase Storage API.
+         */
 
         $certificate->delete();
 
@@ -120,6 +126,7 @@ class Index extends Component
     public function render()
     {
         $certificates = Certificate::query()
+            ->where('user_id', Auth::id())
             ->when($this->search !== '', function ($query) {
                 $query->where(function ($q) {
                     $q->where('title', 'like', '%' . $this->search . '%')
