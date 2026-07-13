@@ -137,9 +137,8 @@ trait UploadsToSupabase
                 $errorKey
             );
         } finally {
-            if (isset($image) && is_resource($image)) {
                 imagedestroy($image);
-            }
+            
 
             if (is_file($tmpPath)) {
                 @unlink($tmpPath);
