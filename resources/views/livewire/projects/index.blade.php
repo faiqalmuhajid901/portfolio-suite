@@ -517,509 +517,357 @@
                     </div>
                 @endif
 
-                <form wire:submit="saveProject">
-                    <div
-                        class="mt-6 grid grid-cols-1 gap-4
-                               md:grid-cols-2"
+                <form
+                    wire:submit="saveProject"
+                    x-data="{
+                        uploading: false,
+                        progress: 0,
+                        error: '',
+                        oldPreview: @js($existingImageUrl),
+                        preview: @js($existingImageUrl),
+                        objectUrl: null,
+
+                        readableError(data, fallback) {
+                            if (data?.message) return data.message;
+
+                            if (data?.errors) {
+                                const first = Object.values(data.errors).flat()[0];
+                                if (first) return first;
+                            }
+
+                            return fallback;
+                        },
+
+                        uploadToSignedUrl(signedUrl, file) {
+                            return new Promise((resolve, reject) => {
+                                const xhr = new XMLHttpRequest();
+
+                                xhr.open('PUT', signedUrl, true);
+                                xhr.setRequestHeader('x-upsert', 'false');
+
+                                xhr.upload.onprogress = (event) => {
+                                    if (event.lengthComputable) {
+                                        this.progress = Math.round(
+                                            (event.loaded / event.total) * 100
+                                        );
+                                    }
+                                };
+
+                                xhr.onload = () => {
+                                    if (xhr.status >= 200 && xhr.status < 300) {
+                                        resolve();
+                                        return;
+                                    }
+
+                                    reject(
+                                        new Error(
+                                            xhr.responseText
+                                            || `Upload gagal dengan status ${xhr.status}.`
+                                        )
+                                    );
+                                };
+
+                                xhr.onerror = () => {
+                                    reject(new Error('Koneksi ke Supabase gagal.'));
+                                };
+
+                                const body = new FormData();
+                                body.append('cacheControl', '3600');
+                                body.append('', file);
+
+                                xhr.send(body);
+                            });
+                        },
+
+                        async chooseImage(event) {
+                            const input = event.target;
+                            const file = input.files?.[0];
+
+                            this.error = '';
+                            this.progress = 0;
+
+                            if (! file) return;
+
+                            const allowedTypes = [
+                                'image/jpeg',
+                                'image/png',
+                                'image/gif',
+                                'image/webp',
+                                'image/bmp',
+                                'image/x-ms-bmp',
+                            ];
+
+                            if (! allowedTypes.includes(file.type)) {
+                                this.error =
+                                    'Format gambar harus JPG, JPEG, PNG, GIF, WEBP, atau BMP.';
+                                input.value = '';
+                                return;
+                            }
+
+                            if (file.size > 4 * 1024 * 1024) {
+                                this.error = 'Ukuran gambar maksimal 4 MB.';
+                                input.value = '';
+                                return;
+                            }
+
+                            const previousPreview = this.preview;
+                            const previousObjectUrl = this.objectUrl;
+                            const nextObjectUrl = URL.createObjectURL(file);
+
+                            this.preview = nextObjectUrl;
+                            this.objectUrl = nextObjectUrl;
+                            this.uploading = true;
+
+                            try {
+                                const csrf = document.querySelector(
+                                    'meta[name=csrf-token]'
+                                )?.getAttribute('content');
+
+                                if (! csrf) {
+                                    throw new Error(
+                                        'CSRF token tidak ditemukan pada layout dashboard.'
+                                    );
+                                }
+
+                                const signResponse = await fetch(
+                                    @js(route('projects.image-upload-url')),
+                                    {
+                                        method: 'POST',
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': csrf,
+                                        },
+                                        credentials: 'same-origin',
+                                        body: JSON.stringify({
+                                            name: file.name,
+                                            type: file.type,
+                                            size: file.size,
+                                        }),
+                                    }
+                                );
+
+                                const signData = await signResponse
+                                    .json()
+                                    .catch(() => ({}));
+
+                                if (! signResponse.ok) {
+                                    throw new Error(
+                                        this.readableError(
+                                            signData,
+                                            'Gagal meminta signed upload URL.'
+                                        )
+                                    );
+                                }
+
+                                await this.uploadToSignedUrl(
+                                    signData.signed_url,
+                                    file
+                                );
+
+                                await this.$wire.setUploadedImage(signData.path);
+
+                                if (
+                                    previousObjectUrl
+                                    && previousObjectUrl !== nextObjectUrl
+                                ) {
+                                    URL.revokeObjectURL(previousObjectUrl);
+                                }
+
+                                URL.revokeObjectURL(nextObjectUrl);
+                                this.objectUrl = null;
+                                this.preview = signData.public_url;
+                                this.progress = 100;
+                            } catch (exception) {
+                                URL.revokeObjectURL(nextObjectUrl);
+
+                                this.objectUrl = previousObjectUrl;
+                                this.preview = previousPreview;
+                                this.error =
+                                    exception?.message
+                                    || 'Upload gambar gagal.';
+
+                                input.value = '';
+                            } finally {
+                                this.uploading = false;
+                            }
+                        },
+
+                        async clearImage() {
+                            if (this.uploading) return;
+
+                            await this.$wire.removeUploadedImage();
+
+                            if (this.objectUrl) {
+                                URL.revokeObjectURL(this.objectUrl);
+                            }
+
+                            this.objectUrl = null;
+                            this.preview = this.oldPreview;
+                            this.progress = 0;
+                            this.error = '';
+
+                            if (this.$refs.imageInput) {
+                                this.$refs.imageInput.value = '';
+                            }
+                        },
+
+                        resetImageUi() {
+                            if (this.objectUrl) {
+                                URL.revokeObjectURL(this.objectUrl);
+                            }
+
+                            this.objectUrl = null;
+                            this.preview = this.oldPreview;
+                            this.progress = 0;
+                            this.error = '';
+
+                            if (this.$refs.imageInput) {
+                                this.$refs.imageInput.value = '';
+                            }
+                        },
+                    }"
+                    x-on:project-image-reset.window="resetImageUi()"
+                >
+
+                {{-- IMAGE UPLOAD --}}
+                <div class="md:col-span-2">
+                    <label
+                        for="project-image"
+                        class="text-sm font-medium text-slate-700 dark:text-slate-200"
                     >
-                        {{-- PROJECT NAME --}}
-                        <div>
-                            <label
-                                for="project-name"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Project Name
-                            </label>
+                        Upload Project Image
 
-                            <input
-                                id="project-name"
-                                wire:model="name"
-                                type="text"
-                                maxlength="120"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('name')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            >
+                        <span class="text-xs font-normal text-gray-500 dark:text-slate-400">
+                            (Opsional)
+                        </span>
+                    </label>
 
-                            @error('name')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
+                    <div
+                        class="mt-2 rounded-2xl border border-dashed border-gray-300 p-5
+                            dark:border-slate-700"
+                    >
+                        <input
+                            id="project-image"
+                            x-ref="imageInput"
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.gif,.webp,.bmp"
+                            x-on:change="chooseImage($event)"
+                            x-bind:disabled="uploading"
+                            class="w-full text-sm text-slate-700
+                                file:mr-4 file:rounded-xl file:border-0
+                                file:bg-[#7fac9f] file:px-4 file:py-2
+                                file:text-sm file:font-semibold file:text-white
+                                disabled:cursor-not-allowed disabled:opacity-60
+                                dark:text-slate-200"
+                        >
+
+                        <p class="mt-3 text-xs text-gray-500 dark:text-slate-400">
+                            Format JPG, JPEG, PNG, GIF, WEBP, atau BMP.
+                            Ukuran maksimal 4 MB. File diunggah langsung ke Supabase.
+                        </p>
+
+                        <div
+                            x-show="uploading"
+                            x-cloak
+                            class="mt-3 rounded-xl bg-[#eef5f2] px-4 py-3
+                                text-sm text-[#2f6f61]
+                                dark:bg-emerald-950 dark:text-emerald-300"
+                        >
+                            Mengunggah gambar...
+                            <span x-text="progress"></span>%
                         </div>
 
-                        {{-- CATEGORY --}}
-                        <div>
-                            <label
-                                for="project-category"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Category
-                            </label>
-
-                            <input
-                                id="project-category"
-                                wire:model="category"
-                                type="text"
-                                maxlength="120"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('category')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            >
-
-                            @error('category')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
+                        <div
+                            x-show="error"
+                            x-cloak
+                            class="mt-3 rounded-lg bg-red-50 px-3 py-2
+                                text-xs font-medium text-red-600
+                                dark:bg-red-950/40 dark:text-red-300"
+                        >
+                            <span x-text="error"></span>
                         </div>
 
-                        {{-- CLIENT --}}
-                        <div>
-                            <label
-                                for="project-client"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Client
-                            </label>
-
-                            <input
-                                id="project-client"
-                                wire:model="client"
-                                type="text"
-                                maxlength="120"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('client')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            >
-
-                            @error('client')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
-
-                        {{-- STATUS --}}
-                        <div>
-                            <label
-                                for="project-status"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Status
-                            </label>
-
-                            <div class="relative mt-2">
-                                <select
-                                    id="project-status"
-                                    wire:model="projectStatus"
-                                    class="w-full appearance-none
-                                           rounded-xl border px-4 py-2 pr-10
-                                           outline-none
-                                           focus:border-[#7fac9f]
-                                           {{ $errors->has('projectStatus')
-                                               ? 'border-red-400'
-                                               : 'border-gray-200'
-                                           }}
-                                           dark:bg-slate-950
-                                           dark:text-white
-                                           dark:border-slate-700"
-                                >
-                                    <option value="in_progress">
-                                        In Progress
-                                    </option>
-
-                                    <option value="review">
-                                        Review
-                                    </option>
-
-                                    <option value="completed">
-                                        Completed
-                                    </option>
-                                </select>
-
-                                <svg
-                                    class="pointer-events-none absolute
-                                           right-4 top-1/2 h-4 w-4
-                                           -translate-y-1/2 text-gray-500
-                                           dark:text-slate-400"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M19 9l-7 7-7-7"
-                                    />
-                                </svg>
-                            </div>
-
-                            @error('projectStatus')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
-
-                        {{-- START DATE --}}
-                        <div>
-                            <label
-                                for="project-start-date"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Start Date
-                            </label>
-
-                            <input
-                                id="project-start-date"
-                                wire:model="startDate"
-                                type="date"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('startDate')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            >
-
-                            @error('startDate')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
-
-                        {{-- END DATE --}}
-                        <div>
-                            <label
-                                for="project-end-date"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                End Date
-                            </label>
-
-                            <input
-                                id="project-end-date"
-                                wire:model="endDate"
-                                type="date"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('endDate')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            >
-
-                            @error('endDate')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
-
-                        {{-- WEBSITE URL --}}
-                        <div class="md:col-span-2">
-                            <label
-                                for="project-website"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Website URL
-                            </label>
-
-                            <input
-                                id="project-website"
-                                wire:model.live.debounce.500ms="websiteUrl"
-                                type="text"
-                                maxlength="255"
-                                placeholder="https://example.com"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('websiteUrl')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            >
-
+                        @error('uploadedImagePath')
                             <p
-                                class="mt-1 text-xs text-gray-500
-                                       dark:text-slate-400"
+                                class="mt-3 rounded-lg bg-red-50 px-3 py-2
+                                    text-xs font-medium text-red-600
+                                    dark:bg-red-950/40 dark:text-red-300"
                             >
-                                Jika gambar tidak diupload, sistem akan
-                                membuat preview otomatis dari Website URL.
+                                {{ $message }}
                             </p>
+                        @enderror
 
-                            @error('websiteUrl')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
-
-                        {{-- IMAGE UPLOAD --}}
-                        <div class="md:col-span-2">
-                            <label
-                                for="project-image"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Upload Project Image
-
-                                <span
-                                    class="text-xs font-normal
-                                           text-gray-500
-                                           dark:text-slate-400"
-                                >
-                                    (Opsional)
-                                </span>
-                            </label>
-
-                            <div
-                                class="mt-2 rounded-2xl border
-                                       border-dashed p-5
-                                       {{ $errors->has('imageUpload')
-                                           ? 'border-red-400 bg-red-50/40'
-                                           : 'border-gray-300'
-                                       }}
-                                       dark:border-slate-700"
-                            >
-                                <input
-                                    id="project-image"
-                                    wire:model="imageUpload"
-                                    type="file"
-                                    accept=".jpg,.jpeg,.png,.gif,.webp,.bmp"
-                                    class="w-full text-sm text-slate-700
-                                           file:mr-4 file:rounded-xl
-                                           file:border-0
-                                           file:bg-[#7fac9f]
-                                           file:px-4 file:py-2
-                                           file:text-sm
-                                           file:font-semibold
-                                           file:text-white
-                                           dark:text-slate-200"
-                                >
-
-                                <p
-                                    class="mt-3 text-xs text-gray-500
-                                           dark:text-slate-400"
-                                >
-                                    Format yang diterima: JPG, JPEG, PNG,
-                                    GIF, WEBP, atau BMP. Ukuran maksimal
-                                    4 MB. File akan disimpan sebagai WebP.
-                                </p>
-
+                        <template x-if="preview">
+                            <div class="mt-4">
                                 <div
-                                    wire:loading
-                                    wire:target="imageUpload"
-                                    class="mt-3 rounded-xl bg-[#eef5f2]
-                                           px-4 py-3 text-sm
-                                           text-[#2f6f61]
-                                           dark:bg-emerald-950
-                                           dark:text-emerald-300"
+                                    class="overflow-hidden rounded-2xl border
+                                        border-gray-100 dark:border-slate-800"
                                 >
-                                    Mengunggah dan memvalidasi gambar...
+                                    <img
+                                        x-bind:src="preview"
+                                        class="h-48 w-full object-cover"
+                                        alt="Preview project image"
+                                    >
                                 </div>
 
-                                @if (
-                                    $imageUpload
-                                    && ! $errors->has('imageUpload')
-                                )
-                                    <div
-                                        wire:loading.remove
-                                        wire:target="imageUpload"
-                                        class="mt-4 overflow-hidden
-                                               rounded-2xl border
-                                               border-gray-100
-                                               dark:border-slate-800"
-                                    >
-                                        <img
-                                            src="{{ $imageUpload->temporaryUrl() }}"
-                                            class="h-48 w-full object-cover"
-                                            alt="Preview project image"
-                                        >
-                                    </div>
-                                @elseif (
-                                    ! $imageUpload
-                                    && filled($websiteUrl)
-                                )
-                                    <div
-                                        class="mt-4 rounded-2xl
-                                               bg-[#eef5f2] p-4
-                                               dark:bg-slate-800"
-                                    >
-                                        <p
-                                            class="text-xs font-medium
-                                                   text-[#2f6f61]
-                                                   dark:text-emerald-300"
-                                        >
-                                            Jika tidak ada file yang
-                                            diupload, preview akan dibuat
-                                            dari Website URL.
-                                        </p>
-                                    </div>
-                                @endif
-
-                                @error('imageUpload')
-                                    <p
-                                        class="mt-3 rounded-lg bg-red-50
-                                               px-3 py-2 text-xs
-                                               font-medium text-red-600
-                                               dark:bg-red-950/40
-                                               dark:text-red-300"
-                                    >
-                                        {{ $message }}
-                                    </p>
-                                @enderror
+                                <button
+                                    type="button"
+                                    x-on:click="clearImage()"
+                                    x-bind:disabled="uploading"
+                                    class="mt-3 text-sm font-semibold text-red-600
+                                        disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    Hapus gambar baru
+                                </button>
                             </div>
-                        </div>
+                        </template>
 
-                        {{-- TAGS --}}
-                        <div class="md:col-span-2">
-                            <label
-                                for="project-tags"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Tags
-                            </label>
-
-                            <input
-                                id="project-tags"
-                                wire:model="tagsInput"
-                                type="text"
-                                maxlength="255"
-                                placeholder="UI, Dashboard, Branding"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('tagsInput')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            >
-
-                            @error('tagsInput')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
+                        <template x-if="! preview && @js(filled($websiteUrl))">
+                            <div class="mt-4 rounded-2xl bg-[#eef5f2] p-4 dark:bg-slate-800">
+                                <p
+                                    class="text-xs font-medium text-[#2f6f61]
+                                        dark:text-emerald-300"
+                                >
+                                    Jika tidak ada file yang diupload, preview akan dibuat
+                                    dari Website URL.
                                 </p>
-                            @enderror
-                        </div>
-
-                        {{-- DESCRIPTION --}}
-                        <div class="md:col-span-2">
-                            <label
-                                for="project-description"
-                                class="text-sm font-medium text-slate-700
-                                       dark:text-slate-200"
-                            >
-                                Description
-                            </label>
-
-                            <textarea
-                                id="project-description"
-                                wire:model="description"
-                                rows="4"
-                                maxlength="500"
-                                class="mt-2 w-full rounded-xl border px-4
-                                       py-2 outline-none
-                                       {{ $errors->has('description')
-                                           ? 'border-red-400'
-                                           : 'border-gray-200'
-                                       }}
-                                       dark:bg-slate-950 dark:text-white
-                                       dark:border-slate-700"
-                            ></textarea>
-
-                            @error('description')
-                                <p class="mt-1 text-xs text-red-500">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
+                            </div>
+                        </template>
                     </div>
+                </div>
 
-                    {{-- ACTION BUTTONS --}}
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            wire:click="closeCreateModal"
-                            wire:loading.attr="disabled"
-                            wire:target="saveProject,imageUpload"
-                            class="rounded-xl border border-gray-200
-                                   px-5 py-3 text-sm font-semibold
-                                   disabled:cursor-not-allowed
-                                   disabled:opacity-60
-                                   dark:border-slate-700 dark:text-white"
-                        >
-                            Cancel
-                        </button>
+                {{--
+                Pada tombol Save/Update, pastikan bentuknya seperti ini:
+                --}}
+                <button
+                    type="submit"
+                    x-bind:disabled="uploading"
+                    wire:loading.attr="disabled"
+                    wire:target="saveProject"
+                    class="rounded-xl bg-[#7fac9f] px-5 py-3
+                        text-sm font-semibold text-white
+                        disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    <span
+                        x-show="! uploading"
+                        wire:loading.remove
+                        wire:target="saveProject"
+                    >
+                        {{ $isEditing ? 'Update Project' : 'Save Project' }}
+                    </span>
 
-                        <button
-                            type="submit"
-                            wire:loading.attr="disabled"
-                            wire:target="saveProject,imageUpload"
-                            class="rounded-xl bg-[#7fac9f] px-5 py-3
-                                   text-sm font-semibold text-white
-                                   disabled:cursor-not-allowed
-                                   disabled:opacity-60"
-                        >
-                            <span
-                                wire:loading.remove
-                                wire:target="saveProject,imageUpload"
-                            >
-                                {{ $isEditing
-                                    ? 'Update Project'
-                                    : 'Save Project'
-                                }}
-                            </span>
+                    <span x-show="uploading" x-cloak>
+                        Uploading Image...
+                    </span>
 
-                            <span
-                                wire:loading
-                                wire:target="imageUpload"
-                            >
-                                Uploading Image...
-                            </span>
+                    <span wire:loading wire:target="saveProject">
+                        Saving...
+                    </span>
+                </button>
 
-                            <span
-                                wire:loading
-                                wire:target="saveProject"
-                            >
-                                Saving...
-                            </span>
-                        </button>
-                    </div>
                 </form>
+
             </div>
         </div>
     @endif

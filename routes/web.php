@@ -11,6 +11,7 @@ use App\Livewire\Profile\Show as ProfileShow;
 use App\Livewire\Settings\Index as SettingsIndex;
 use App\Livewire\Landing\Index as LandingIndex;
 use App\Livewire\Certificates\Index as CertificateIndex;
+use App\Http\Controllers\ProjectImageUploadController;
 
 Route::get('/', LandingIndex::class)->name('home');
 
@@ -22,6 +23,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/certificates', CertificateIndex::class)->name('certificates');
     Route::get('/profile', ProfileShow::class)->name('profile.show');
     Route::get('/settings', SettingsIndex::class)->name('settings');
+    Route::post(
+    '/projects/image-upload-url',
+    [
+        ProjectImageUploadController::class,
+        'createSignedUploadUrl',
+    ]
+    )->name('projects.image-upload-url');
 });
 
 /*
