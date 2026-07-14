@@ -238,22 +238,46 @@ class Index extends Component
             $project = $this->projectQuery()->find($projectId);
 
             if (! $project) {
-                session()->flash('error', 'Project tidak ditemukan.');
+                session()->flash(
+                    'error',
+                    'Project tidak ditemukan.'
+                );
+
                 return;
             }
 
+            // Simpan URL sebelum record database dihapus.
             $imageUrl = $project->image;
-            $project->deleteProject($projectId);
+
+            // Gunakan query builder untuk menghapus project.
+            $deleted = $this->projectQuery()
+                ->whereKey($projectId)
+                ->delete();
+
+            if (! $deleted) {
+                throw new RuntimeException(
+                    'Record project gagal dihapus dari database.'
+                );
+            }
+
+            // Hapus gambar Supabase setelah record database berhasil dihapus.
             $this->deleteSupabaseImageByUrl($imageUrl);
 
-            session()->flash('success', 'Project berhasil dihapus.');
+            // Kembali ke halaman pertama agar pagination tidak kosong.
+            $this->resetPage();
+
+            session()->flash(
+                'success',
+                'Project berhasil dihapus.'
+            );
         } catch (Throwable $exception) {
             report($exception);
 
             session()->flash(
                 'error',
                 app()->isLocal()
-                    ? 'Project gagal dihapus: '.$exception->getMessage()
+                    ? 'Project gagal dihapus: '
+                        . $exception->getMessage()
                     : 'Project gagal dihapus.'
             );
         }
@@ -278,41 +302,83 @@ class Index extends Component
 
     public function exportCsv()
     {
-        $projects = $this->projectQuery()->latest()->get();
+        $projects = $this->projectQuery()
+            ->latest()
+            ->get();
 
-        return response()->streamDownload(function () use ($projects): void {
-            $handle = fopen('php://output', 'w');
+        $fileName = 'portfolio-projects-'
+            . now()->format('Y-m-d')
+            . '.csv';
 
-            if ($handle === false) {
-                throw new RuntimeException('Gagal membuat file CSV.');
-            }
+        return response()->streamDownload(
+            function () use ($projects): void {
+                $handle = fopen('php://output', 'wb');
 
-            fputcsv($handle, [
-                'Name',
-                'Category',
-                'Client',
-                'Status',
-                'Start Date',
-                'End Date',
-                'Website URL',
-                'Likes',
-            ]);
+                if ($handle === false) {
+                    throw new RuntimeException(
+                        'Gagal membuat file CSV.'
+                    );
+                }
 
-            foreach ($projects as $project) {
-                fputcsv($handle, [
-                    $project->name,
-                    $project->category,
-                    $project->client,
-                    $project->status,
-                    optional($project->start_date)->format('Y-m-d'),
-                    optional($project->end_date)->format('Y-m-d'),
-                    $project->website_url,
-                    $project->likes,
-                ]);
-            }
+                /*
+                * UTF-8 BOM:
+                * Membantu Excel membaca karakter UTF-8 dengan benar.
+                */
+                fwrite($handle, "\xEF\xBB\xBF");
 
-            fclose($handle);
-        }, 'portfolio-projects.csv');
+                /*
+                * Memberi tahu Excel bahwa pemisah kolom adalah titik koma.
+                */
+                fwrite($handle, "sep=;\r\n");
+
+                $delimiter = ';';
+
+                fputcsv(
+                    $handle,
+                    [
+                        'Name',
+                        'Category',
+                        'Client',
+                        'Status',
+                        'Start Date',
+                        'End Date',
+                        'Website URL',
+                        'Likes',
+                    ],
+                    $delimiter,
+                    '"',
+                    ''
+                );
+
+                foreach ($projects as $project) {
+                    fputcsv(
+                        $handle,
+                        [
+                            $project->name ?? '',
+                            $project->category ?? '',
+                            $project->client ?? '',
+                            $project->status ?? '',
+                            $project->start_date?->format('Y-m-d') ?? '',
+                            $project->end_date?->format('Y-m-d') ?? '',
+                            $project->website_url ?? '',
+                            $project->likes ?? 0,
+                        ],
+                        $delimiter,
+                        '"',
+                        ''
+                    );
+                }
+
+                fclose($handle);
+            },
+            $fileName,
+            [
+                'Content-Type' =>
+                    'text/csv; charset=UTF-8',
+                'Cache-Control' =>
+                    'no-store, no-cache, must-revalidate',
+            ]
+        );
     }
 
     private function projectQuery()

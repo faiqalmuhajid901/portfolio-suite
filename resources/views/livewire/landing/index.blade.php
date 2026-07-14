@@ -407,11 +407,29 @@
                                         </a>
                                     @endif
 
+                                    @php
+                                        $featuredLiked = in_array(
+                                            (int) $featured->id,
+                                            $likedProjectIds,
+                                            true
+                                        );
+                                    @endphp
+
                                     <button
+                                        type="button"
                                         wire:click="like({{ $featured->id }})"
-                                        class="rounded-xl border border-[#7fac9f] px-5 py-3 text-sm font-semibold text-[#2f6f61] hover:bg-[#eef5f2] dark:text-emerald-300 dark:hover:bg-slate-800"
+                                        wire:loading.attr="disabled"
+                                        wire:target="like({{ $featured->id }})"
+                                        @disabled($featuredLiked)
+                                        @class([
+                                            'rounded-xl border px-5 py-3 text-sm font-semibold transition',
+                                            'border-[#7fac9f] text-[#2f6f61] hover:bg-[#eef5f2] dark:text-emerald-300 dark:hover:bg-slate-800' =>
+                                                ! $featuredLiked,
+                                            'cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700 opacity-75 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300' =>
+                                                $featuredLiked,
+                                        ])
                                     >
-                                        ♥ Like Project
+                                        {{ $featuredLiked ? '♥ Liked' : '♡ Like Project' }}
                                     </button>
                                 </div>
                             </div>
@@ -448,6 +466,7 @@
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     @forelse ($projects as $project)
                         <div
+                            wire:key="public-project-{{ $project->id }}"
                             class="overflow-hidden rounded-[24px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.10)] transition dark:bg-slate-900"
                             :style="`
                                 transform:
@@ -492,11 +511,31 @@
                                 </div>
 
                                 <div class="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                                    @php
+                                        $projectLiked = in_array(
+                                            (int) $project->id,
+                                            $likedProjectIds,
+                                            true
+                                        );
+                                    @endphp
+
                                     <button
+                                        type="button"
                                         wire:click="like({{ $project->id }})"
-                                        class="text-left text-sm font-semibold text-[#2f6f61] hover:underline dark:text-emerald-300"
+                                        wire:loading.attr="disabled"
+                                        wire:target="like({{ $project->id }})"
+                                        @disabled($projectLiked)
+                                        @class([
+                                            'text-left text-sm font-semibold transition',
+                                            'text-[#2f6f61] hover:underline dark:text-emerald-300' =>
+                                                ! $projectLiked,
+                                            'cursor-not-allowed text-emerald-700 opacity-75 dark:text-emerald-300' =>
+                                                $projectLiked,
+                                        ])
                                     >
-                                        ♥ {{ number_format($project->likes) }} likes
+                                        {{ $projectLiked ? '♥' : '♡' }}
+                                        {{ number_format($project->likes) }}
+                                        likes
                                     </button>
 
                                     <div class="flex items-center gap-3">
@@ -555,6 +594,7 @@
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     @forelse ($certificates as $certificate)
                         <div
+                            wire:key="public-certificate-{{ $certificate->id }}"
                             class="overflow-hidden rounded-[28px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)] dark:bg-slate-900"
                             :style="`
                                 transform:
