@@ -230,7 +230,7 @@
             <div
                 class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl dark:bg-slate-900"
                 x-data="projectImageUploader({
-                    signUrl: @js(route('projects.image-upload-url')),
+                    signUrl: @js(route('projects.image-upload-url', false)),
                     existingImage: @js($existingImageUrl),
                 })"
                 x-on:project-image-reset.window="resetUploader()"
