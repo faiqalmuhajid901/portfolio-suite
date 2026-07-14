@@ -1,1 +1,1 @@
-//
+import './project-image-upload';

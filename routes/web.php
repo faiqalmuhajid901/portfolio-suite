@@ -15,7 +15,7 @@ use App\Http\Controllers\ProjectImageUploadController;
 
 Route::get('/', LandingIndex::class)->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function ():void {
     Route::get('/dashboard', Overview::class)->name('dashboard');
     Route::get('/activity', Activity::class)->name('activity');
     Route::get('/portfolio', PortfolioIndex::class)->name('portfolio');

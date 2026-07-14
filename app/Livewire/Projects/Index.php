@@ -89,15 +89,15 @@ class Index extends Component
 
     public function openCreateModal(): void
     {
-        $this->discardPendingUpload();
         $this->resetForm();
 
+        $this->isEditing = false;
+        $this->editingProjectId = null;
         $this->showCreateModal = true;
     }
 
     public function openEditModal(int $projectId): void
     {
-        $this->discardPendingUpload();
         $this->resetForm();
 
         $project = $this->projectQuery()->find($projectId);
@@ -126,9 +126,10 @@ class Index extends Component
 
     public function closeCreateModal(): void
     {
-        $this->discardPendingUpload();
         $this->showCreateModal = false;
+        $this->uploadedImagePath = null;
         $this->resetForm();
+        $this->dispatch('project-image-reset');
     }
 
     public function setUploadedImage(string $path): void
@@ -146,7 +147,8 @@ class Index extends Component
 
     public function removeUploadedImage(): void
     {
-        $this->discardPendingUpload();
+        $this->uploadedImagePath = null;
+        $this->resetErrorBag('uploadedImagePath');
         $this->dispatch('project-image-reset');
     }
 
@@ -241,7 +243,7 @@ class Index extends Component
             }
 
             $imageUrl = $project->image;
-            $project->delete();
+            $project->deleteProject($projectId);
             $this->deleteSupabaseImageByUrl($imageUrl);
 
             session()->flash('success', 'Project berhasil dihapus.');
