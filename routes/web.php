@@ -12,6 +12,7 @@ use App\Livewire\Settings\Index as SettingsIndex;
 use App\Livewire\Landing\Index as LandingIndex;
 use App\Livewire\Certificates\Index as CertificateIndex;
 use App\Http\Controllers\ProjectImageUploadController;
+use App\Http\Controllers\DirectUploadController;
 
 Route::get('/', LandingIndex::class)->name('home');
 
@@ -30,6 +31,13 @@ Route::middleware(['auth', 'verified'])->group(function ():void {
         'createSignedUploadUrl',
     ]
     )->name('projects.image-upload-url');
+    Route::post(
+        '/direct-upload-url',
+        [
+            DirectUploadController::class,
+            'createSignedUrl',
+        ]
+    )->name('direct-upload-url');
 });
 
 /*
