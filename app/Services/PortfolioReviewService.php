@@ -129,19 +129,39 @@ class PortfolioReviewService
     private function httpClient(int $timeout): PendingRequest
     {
         $headers = [];
-        $clientId = (string) config('services.ollama.cf_access_client_id');
-        $clientSecret = (string) config('services.ollama.cf_access_client_secret');
-        $bearerToken = (string) config('services.ollama.bearer_token');
+
+        $clientId = (string) config(
+            'services.ollama.cf_access_client_id'
+        );
+
+        $clientSecret = (string) config(
+            'services.ollama.cf_access_client_secret'
+        );
+
+        $bearerToken = (string) config(
+            'services.ollama.bearer_token'
+        );
 
         if (filled($clientId) && filled($clientSecret)) {
             $headers['CF-Access-Client-Id'] = $clientId;
             $headers['CF-Access-Client-Secret'] = $clientSecret;
         }
 
-        $request = Http::acceptJson()
+        $caBundle = base_path('certs/cacert.pem');
+
+        if (! is_file($caBundle)) {
+            throw new RuntimeException(
+                'CA bundle certs/cacert.pem tidak ditemukan.'
+            );
+        }
+
+        $request = Http::withOptions([
+                'verify' => $caBundle,
+            ])
+            ->acceptJson()
             ->asJson()
             ->withHeaders($headers)
-            ->connectTimeout(10)
+            ->connectTimeout(15)
             ->timeout($timeout)
             ->retry(1, 750);
 
