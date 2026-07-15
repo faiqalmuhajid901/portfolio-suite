@@ -15,6 +15,8 @@ return Application::configure(
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->web(append:
+        \App\Http\Middleware\TrackPortfolioVisit::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

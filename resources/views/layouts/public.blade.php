@@ -17,6 +17,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ?? 'Portfolio Suite' }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -120,6 +121,37 @@
             {{ $slot }}
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const heartbeatUrl = @json(route('analytics.heartbeat'));
+
+            const sendHeartbeat = () => {
+                if (document.visibilityState !== 'visible' || !csrfToken) {
+                    return;
+                }
+
+                fetch(heartbeatUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    keepalive: true,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                }).catch(() => {
+                    // Tracking failure must not disturb the public portfolio.
+                });
+            };
+
+            window.setTimeout(sendHeartbeat, 15000);
+            window.setInterval(sendHeartbeat, 45000);
+            document.addEventListener('visibilitychange', sendHeartbeat);
+        });
+    </script>
+
 
     @livewireScripts
 

@@ -40,4 +40,14 @@ return [
         'service_role_key' => env('SUPABASE_SERVICE_ROLE_KEY'),
         'storage_bucket' => env('SUPABASE_STORAGE_BUCKET', 'portfolio-assets'),
     ],
+
+    'ollama' => [
+        'base_url' => env('OLLAMA_BASE_URL', 'http://127.0.0.1:11434'),
+        'model' => env('OLLAMA_MODEL', 'qwen3:4b'),
+        'timeout' => env('OLLAMA_TIMEOUT', 1240),
+        'bearer_token' => env('OLLAMA_BEARER_TOKEN'),
+        'cf_access_client_id' => env('OLLAMA_CF_ACCESS_CLIENT_ID'),
+        'cf_access_client_secret' => env('OLLAMA_CF_ACCESS_CLIENT_SECRET'),
+    ],
+
 ];

@@ -15,6 +15,9 @@ use App\Http\Controllers\ProjectImageUploadController;
 use App\Http\Controllers\DirectUploadController;
 
 Route::get('/', LandingIndex::class)->name('home');
+Route::post('/analytics/heartbeat', App\Http\Controllers\AnalyticsHeartbeatController::class)
+    ->middleware('throttle:30,1')
+    ->name('analytics.heartbeat');
 
 Route::middleware(['auth', 'verified'])->group(function ():void {
     Route::get('/dashboard', Overview::class)->name('dashboard');
