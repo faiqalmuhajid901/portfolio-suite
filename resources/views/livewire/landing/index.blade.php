@@ -285,9 +285,7 @@
                     ? $publicProfile->birth_date->age
                     : null;
 
-                $primaryEducation = $publicProfile
-                    ->educations
-                    ->first();
+                $primaryEducation = $educations->first();
 
                 $aboutFacts = collect([
                     [
@@ -658,7 +656,7 @@
                     @endif
 
                     {{-- Education history --}}
-                    @if ($publicProfile->educations->isNotEmpty())
+                    @if ($educations->isNotEmpty())
                         <div
                             class="relative mt-10 border-t border-slate-100
                                 pt-8 dark:border-slate-800"
@@ -681,10 +679,7 @@
                             </div>
 
                             <div class="mt-6 space-y-4">
-                                @foreach (
-                                    $publicProfile->educations
-                                    as $education
-                                )
+                                @foreach ($educations as $education)
                                     <article
                                         class="grid gap-5 rounded-2xl
                                             border border-slate-100 p-5

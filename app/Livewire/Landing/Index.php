@@ -2,6 +2,9 @@
 
 namespace App\Livewire\Landing;
 
+use App\Models\Education;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use App\Models\Certificate;
 use App\Models\Profile;
 use App\Models\Project;
@@ -124,34 +127,48 @@ class Index extends Component
                 ->when(
                     $this->search !== '',
                     function ($query): void {
-                        $query->where(
-                            function ($subQuery): void {
-                                $keyword = '%' . $this->search . '%';
+                        $query->where(function ($subQuery): void {
+                            $keyword = '%' . $this->search . '%';
 
-                                $subQuery
-                                    ->where('name', 'like', $keyword)
-                                    ->orWhere('category', 'like', $keyword)
-                                    ->orWhere('client', 'like', $keyword)
-                                    ->orWhere('description', 'like', $keyword);
-                            }
-                        );
+                            $subQuery
+                                ->where('name', 'like', $keyword)
+                                ->orWhere('category', 'like', $keyword)
+                                ->orWhere('client', 'like', $keyword)
+                                ->orWhere('description', 'like', $keyword);
+                        });
                     }
                 )
                 ->latest();
 
-            /*
-            * Hanya mengambil profil yang telah ditentukan
-            * sebagai profil publik.
-            */
             $publicProfile = Profile::query()
                 ->latest()
                 ->first();
 
-            return view ('livewire.landing.index', [
+            /*
+            * Homepage tidak boleh gagal hanya karena migration
+            * educations belum diterapkan pada database production.
+            */
+            $educations = collect();
+
+            if (
+                $publicProfile !== null
+                && Schema::hasTable('educations')
+            ) {
+                $educations = Education::query()
+                    ->where('profile_id', $publicProfile->id)
+                    ->where('is_visible', true)
+                    ->orderBy('sort_order')
+                    ->orderByDesc('end_year')
+                    ->orderByDesc('start_year')
+                    ->get();
+            }
+
+            return view('livewire.landing.index', [
                 'publicProfile' => $publicProfile,
+                'educations' => $educations,
 
                 'totalProjects' => Project::query()
-                    ->count('*'),
+                    ->count(),
 
                 'totalLikes' => Project::query()
                     ->sum('likes'),
