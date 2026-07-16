@@ -144,19 +144,10 @@ class Index extends Component
             * sebagai profil publik.
             */
             $publicProfile = Profile::query()
-                ->where('is_public', true)
-                ->with([
-                    'educations' => function ($query): void {
-                        $query
-                            ->where('is_visible', true)
-                            ->orderBy('sort_order')
-                            ->orderByDesc('end_year')
-                            ->orderByDesc('start_year');
-                    },
-                ])
+                ->latest()
                 ->first();
 
-            return view('livewire.landing.index', [
+            return view ('livewire.landing.index', [
                 'publicProfile' => $publicProfile,
 
                 'totalProjects' => Project::query()
