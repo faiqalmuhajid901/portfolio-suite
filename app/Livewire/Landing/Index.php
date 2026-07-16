@@ -127,44 +127,64 @@ class Index extends Component
                 ->when(
                     $this->search !== '',
                     function ($query): void {
-                        $query->where(function ($subQuery): void {
-                            $keyword = '%' . $this->search . '%';
+                        $query->where(
+                            function ($subQuery): void {
+                                $keyword = '%' . $this->search . '%';
 
-                            $subQuery
-                                ->where('name', 'like', $keyword)
-                                ->orWhere('category', 'like', $keyword)
-                                ->orWhere('client', 'like', $keyword)
-                                ->orWhere('description', 'like', $keyword);
-                        });
+                                $subQuery
+                                    ->where(
+                                        'name',
+                                        'like',
+                                        $keyword
+                                    )
+                                    ->orWhere(
+                                        'category',
+                                        'like',
+                                        $keyword
+                                    )
+                                    ->orWhere(
+                                        'client',
+                                        'like',
+                                        $keyword
+                                    )
+                                    ->orWhere(
+                                        'description',
+                                        'like',
+                                        $keyword
+                                    );
+                            }
+                        );
                     }
                 )
                 ->latest();
 
+            /*
+            * Ambil profil beserta pendidikan yang boleh
+            * ditampilkan pada halaman publik.
+            */
             $publicProfile = Profile::query()
+                ->with([
+                    'educations' => function ($query): void {
+                        $query
+                            ->where('is_visible', true)
+                            ->orderBy('sort_order')
+                            ->orderByDesc('end_year')
+                            ->orderByDesc('start_year');
+                    },
+                ])
                 ->latest()
                 ->first();
 
             /*
-            * Homepage tidak boleh gagal hanya karena migration
-            * educations belum diterapkan pada database production.
+            * Variabel ini wajib dikirim karena Blade
+            * menggunakan $educations.
             */
-            $educations = collect();
-
-            if (
-                $publicProfile !== null
-                && Schema::hasTable('educations')
-            ) {
-                $educations = Education::query()
-                    ->where('profile_id', $publicProfile->id)
-                    ->where('is_visible', true)
-                    ->orderBy('sort_order')
-                    ->orderByDesc('end_year')
-                    ->orderByDesc('start_year')
-                    ->get();
-            }
+            $educations = $publicProfile?->educations
+                ?? collect();
 
             return view('livewire.landing.index', [
                 'publicProfile' => $publicProfile,
+
                 'educations' => $educations,
 
                 'totalProjects' => Project::query()

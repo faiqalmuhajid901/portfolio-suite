@@ -8,12 +8,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Profile extends Model
 {
-    /**
-     * Field yang boleh diisi melalui create() dan update().
-     *
-     * Field About Me wajib berada di sini agar data dari
-     * AboutEditor tidak dibuang oleh mass-assignment protection.
-     */
     protected $fillable = [
         'user_id',
         'name',
@@ -45,44 +39,21 @@ class Profile extends Model
         'is_public',
     ];
 
-    /**
-     * Mengubah data database menjadi tipe PHP yang sesuai.
-     */
     protected function casts(): array
     {
         return [
-            /*
-             * Wajib agar:
-             *
-             * $profile->birth_date->age
-             *
-             * dapat digunakan. Tanpa cast ini, birth_date
-             * hanya berupa string dari PostgreSQL.
-             */
             'birth_date' => 'date',
-
-            /*
-             * Wajib agar JSON PostgreSQL dikembalikan
-             * sebagai array PHP.
-             */
             'languages' => 'array',
             'current_focus' => 'array',
-
             'is_public' => 'boolean',
         ];
     }
 
-    /**
-     * User pemilik profil.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Seluruh riwayat pendidikan milik profil.
-     */
     public function educations(): HasMany
     {
         return $this->hasMany(Education::class)
