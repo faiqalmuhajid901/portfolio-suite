@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Education extends Model
 {
+    /**
+     * Nama tabel harus ditetapkan secara eksplisit.
+     *
+     * Tanpa properti ini, Eloquent pada aplikasi Anda
+     * menghasilkan query ke tabel "education".
+     */
+    protected $table = 'educations';
+
     protected $fillable = [
         'profile_id',
         'level',

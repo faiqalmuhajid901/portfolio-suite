@@ -144,11 +144,7 @@ class Index extends Component
         $publicProfile = Profile::query()
             ->with([
                 'educations' => function ($query): void {
-                    $query
-                        ->where('is_visible', true)
-                        ->orderBy('sort_order')
-                        ->orderByDesc('end_year')
-                        ->orderByDesc('start_year');
+                    $query->where('is_visible', true);
                 },
             ])
             ->latest()
