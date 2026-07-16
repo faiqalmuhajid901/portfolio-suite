@@ -11,7 +11,8 @@ class BioEditor extends Component
 
     public function mount(): void
     {
-        $this->bio = Auth::user()?->profile?->bio ?? 'Strategic portfolio manager focused on clean design systems, measurable project outcomes, and high-performance digital interfaces.';
+        $this->bio = Auth::user()?->profile?->bio
+            ?? 'Tuliskan ringkasan profil profesional Anda.';
     }
 
     public function save(): void
@@ -22,16 +23,36 @@ class BioEditor extends Component
             return;
         }
 
-        $user->profile()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'name' => $user->name,
-                'role' => 'Portfolio Manager',
-                'bio' => $this->bio,
-            ]
-        );
+        $this->validate([
+            'bio' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
 
-        session()->flash('bio_success', 'Bio berhasil diperbarui.');
+        $profile = $user->profile;
+
+        if (! $profile) {
+            $profile = $user->profile()->create([
+                'name' => $user->name,
+                'role' => 'Web Developer',
+                'is_public' => true,
+            ]);
+        }
+
+        /*
+         * Hanya memperbarui bio.
+         * Jangan menimpa name atau role.
+         */
+        $profile->update([
+            'bio' => trim($this->bio),
+        ]);
+
+        session()->flash(
+            'bio_success',
+            'Bio berhasil diperbarui.'
+        );
     }
 
     public function render()

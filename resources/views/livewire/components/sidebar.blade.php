@@ -58,49 +58,96 @@
             <nav class="mt-8 space-y-2 text-sm">
                 <a
                     href="{{ route('portfolio') }}"
-                    class="block rounded-xl px-4 py-3 text-slate-800 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-800 {{ request()->routeIs('portfolio') ? 'bg-white font-semibold dark:bg-slate-800' : '' }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('portfolio')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
                 >
                     Portfolio
                 </a>
 
                 <a
                     href="{{ route('dashboard') }}"
-                    class="block rounded-xl px-4 py-3 text-slate-800 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-800 {{ request()->routeIs('dashboard') ? 'bg-white font-semibold dark:bg-slate-800' : '' }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('dashboard')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
                 >
                     Analytics
                 </a>
 
                 <a
                     href="{{ route('activity') }}"
-                    class="block rounded-xl px-4 py-3 text-slate-800 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-800 {{ request()->routeIs('activity') ? 'bg-white font-semibold dark:bg-slate-800' : '' }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('activity')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
                 >
                     Activity
                 </a>
 
                 <a
                     href="{{ route('projects') }}"
-                    class="block rounded-xl px-4 py-3 text-slate-800 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-800 {{ request()->routeIs('projects') ? 'bg-white font-semibold dark:bg-slate-800' : '' }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('projects')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
                 >
                     Projects
                 </a>
 
                 <a
                     href="{{ route('certificates') }}"
-                    class="block rounded-xl px-4 py-3 text-slate-800 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-800 {{ request()->routeIs('certificates') ? 'bg-white font-semibold dark:bg-slate-800' : '' }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('certificates')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
                 >
                     Certificates
                 </a>
 
                 <a
+                    href="{{ route('profile.about') }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('profile.about')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
+                >
+                    About Me
+                </a>
+
+                <a
                     href="{{ route('profile.show') }}"
-                    class="block rounded-xl px-4 py-3 text-slate-800 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-800 {{ request()->routeIs('profile.show') ? 'bg-white font-semibold dark:bg-slate-800' : '' }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('profile.show')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
                 >
                     Profile
                 </a>
 
                 <a
                     href="{{ route('settings') }}"
-                    class="block rounded-xl px-4 py-3 text-slate-800 hover:bg-white/70 dark:text-slate-200 dark:hover:bg-slate-800 {{ request()->routeIs('settings') ? 'bg-white font-semibold dark:bg-slate-800' : '' }}"
+                    class="block rounded-xl px-4 py-3 text-slate-800
+                        hover:bg-white/70 dark:text-slate-200
+                        dark:hover:bg-slate-800
+                        {{ request()->routeIs('settings')
+                                ? 'bg-white font-semibold dark:bg-slate-800'
+                                : '' }}"
                 >
                     Settings
                 </a>

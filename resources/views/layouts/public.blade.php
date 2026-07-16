@@ -37,6 +37,14 @@
                         Overview
                     </a>
 
+                    <a
+                        href="#about"
+                        class="text-gray-600 hover:text-[#2f6f61]
+                            dark:text-slate-300 dark:hover:text-emerald-300"
+                    >
+                        About Me
+                    </a>
+
                     <a href="#portfolio" class="text-gray-600 hover:text-[#2f6f61] dark:text-slate-300 dark:hover:text-emerald-300">
                         Portfolio
                     </a>
@@ -89,6 +97,14 @@
                 <nav class="space-y-3 text-sm">
                     <a href="#overview" @click="mobileMenu = false" class="block text-slate-700 dark:text-slate-200">
                         Overview
+                    </a>
+
+                    <a
+                        href="#about"
+                        class="text-gray-600 hover:text-[#2f6f61]
+                            dark:text-slate-300 dark:hover:text-emerald-300"
+                    >
+                        About Me
                     </a>
 
                     <a href="#portfolio" @click="mobileMenu = false" class="block text-slate-700 dark:text-slate-200">

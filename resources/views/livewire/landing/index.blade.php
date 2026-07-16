@@ -279,6 +279,501 @@
         </div>
     </section>
 
+        @if ($publicProfile)
+            @php
+                $age = $publicProfile->birth_date
+                    ? $publicProfile->birth_date->age
+                    : null;
+
+                $primaryEducation = $publicProfile
+                    ->educations
+                    ->first();
+
+                $aboutFacts = collect([
+                    [
+                        'label' => 'Age',
+                        'value' => $age
+                            ? $age . ' years old'
+                            : null,
+                    ],
+                    [
+                        'label' => 'Domicile',
+                        'value' => $publicProfile->domicile,
+                    ],
+                    [
+                        'label' => 'Education',
+                        'value' => $primaryEducation?->level,
+                    ],
+                    [
+                        'label' => 'Major',
+                        'value' => $primaryEducation?->major,
+                    ],
+                    [
+                        'label' => 'Institution',
+                        'value' => $primaryEducation?->institution,
+                    ],
+                    [
+                        'label' => 'GPA',
+                        'value' => $primaryEducation?->gpa,
+                    ],
+                ])->filter(
+                    fn (array $fact): bool => filled($fact['value'])
+                );
+            @endphp
+
+            <section
+                id="about"
+                class="relative z-40 px-6 py-16 sm:px-8 lg:px-14 lg:py-20"
+                style="perspective: 1700px;"
+            >
+                <div
+                    class="pointer-events-none absolute left-1/2 top-1/2
+                        h-96 w-[70%] -translate-x-1/2 -translate-y-1/2
+                        rounded-full bg-[#7fac9f]/15 blur-3xl
+                        dark:bg-emerald-400/10"
+                ></div>
+
+                <div
+                    class="relative mx-auto max-w-6xl overflow-hidden
+                        rounded-[42px] border border-white/70 bg-white/88
+                        p-6 shadow-[0_30px_100px_rgba(15,23,42,0.13)]
+                        backdrop-blur-2xl dark:border-white/10
+                        dark:bg-slate-900/88 sm:p-8 lg:p-10"
+                    :style="`
+                        transform-style: preserve-3d;
+                        transform:
+                            translateZ(${Math.min(
+                                Math.max(scrollY - 260, 0) / 12,
+                                55
+                            )}px)
+                            rotateX(${clamp(
+                                (scrollY - 300) / 700,
+                                0,
+                                2.5
+                            )}deg);
+                        transition: transform 0.16s ease-out;
+                    `"
+                >
+                    <div
+                        class="pointer-events-none absolute -right-24 -top-24
+                            h-72 w-72 rounded-full bg-[#7fac9f]/20
+                            blur-3xl dark:bg-emerald-400/10"
+                    ></div>
+
+                    <div
+                        class="relative grid gap-10
+                            lg:grid-cols-[300px_1fr] lg:items-start"
+                    >
+                        {{-- Profile identity --}}
+                        <div
+                            class="rounded-[30px] bg-[#eef5f2] p-6 text-center
+                                shadow-sm dark:bg-slate-800"
+                        >
+                            <div
+                                class="mx-auto flex h-40 w-40 items-center
+                                    justify-center overflow-hidden rounded-full
+                                    bg-[#2f6f61] text-5xl font-black text-white
+                                    ring-8 ring-white shadow-[0_20px_60px_rgba(15,23,42,0.20)]
+                                    dark:ring-slate-900"
+                            >
+                                @if ($publicProfile->avatar)
+                                    <img
+                                        src="{{ asset($publicProfile->avatar) }}"
+                                        alt="{{ $publicProfile->name }}"
+                                        class="h-full w-full object-cover"
+                                    >
+                                @else
+                                    {{ strtoupper(
+                                        substr($publicProfile->name, 0, 1)
+                                    ) }}
+                                @endif
+                            </div>
+
+                            <h2
+                                class="mt-7 text-2xl font-black
+                                    tracking-[-0.03em] text-slate-950
+                                    dark:text-white"
+                            >
+                                {{ $publicProfile->name }}
+                            </h2>
+
+                            @if ($publicProfile->role)
+                                <p
+                                    class="mt-2 text-sm font-bold text-[#2f6f61]
+                                        dark:text-emerald-300"
+                                >
+                                    {{ $publicProfile->role }}
+                                </p>
+                            @endif
+
+                            @if ($publicProfile->professional_status)
+                                <div
+                                    class="mt-6 inline-flex items-center gap-2
+                                        rounded-full bg-white px-4 py-2
+                                        shadow-sm dark:bg-slate-900"
+                                >
+                                    <span class="relative flex h-2.5 w-2.5">
+                                        <span
+                                            class="absolute inline-flex h-full
+                                                w-full animate-ping rounded-full
+                                                bg-emerald-400 opacity-75"
+                                        ></span>
+
+                                        <span
+                                            class="relative inline-flex h-2.5 w-2.5
+                                                rounded-full bg-emerald-500"
+                                        ></span>
+                                    </span>
+
+                                    <span
+                                        class="text-xs font-bold text-slate-600
+                                            dark:text-slate-300"
+                                    >
+                                        {{ $publicProfile->professional_status }}
+                                    </span>
+                                </div>
+                            @endif
+
+                            <div
+                                class="mt-7 flex flex-wrap justify-center gap-2"
+                            >
+                                @if ($publicProfile->github_url)
+                                    <a
+                                        href="{{ $publicProfile->github_url }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="rounded-xl border border-[#7fac9f]
+                                            px-4 py-2 text-xs font-semibold
+                                            text-[#2f6f61]
+                                            dark:text-emerald-300"
+                                    >
+                                        GitHub
+                                    </a>
+                                @endif
+
+                                @if ($publicProfile->linkedin_url)
+                                    <a
+                                        href="{{ $publicProfile->linkedin_url }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="rounded-xl border border-[#7fac9f]
+                                            px-4 py-2 text-xs font-semibold
+                                            text-[#2f6f61]
+                                            dark:text-emerald-300"
+                                    >
+                                        LinkedIn
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Main content --}}
+                        <div>
+                            <p
+                                class="text-sm font-bold uppercase
+                                    tracking-[0.22em] text-[#2f6f61]
+                                    dark:text-emerald-300"
+                            >
+                                About Me
+                            </p>
+
+                            <h2
+                                class="mt-4 max-w-3xl text-3xl font-black
+                                    tracking-[-0.04em] text-slate-950
+                                    dark:text-white sm:text-4xl"
+                            >
+                                {{ $publicProfile->about_title
+                                    ?: 'Personal background and professional focus.' }}
+                            </h2>
+
+                            @if (
+                                $publicProfile->about_description
+                                || $publicProfile->bio
+                            )
+                                <p
+                                    class="mt-6 max-w-3xl whitespace-pre-line
+                                        leading-8 text-slate-600
+                                        dark:text-slate-300"
+                                >
+                                    {{ $publicProfile->about_description
+                                        ?: $publicProfile->bio }}
+                                </p>
+                            @endif
+
+                            @if ($aboutFacts->isNotEmpty())
+                                <div
+                                    class="mt-8 grid gap-3 sm:grid-cols-2
+                                        xl:grid-cols-3"
+                                >
+                                    @foreach ($aboutFacts as $fact)
+                                        <div
+                                            class="rounded-2xl border border-black/5
+                                                bg-[#f5f8f8] p-4
+                                                dark:border-white/5
+                                                dark:bg-slate-800"
+                                        >
+                                            <p
+                                                class="text-[11px] font-bold
+                                                    uppercase tracking-[0.14em]
+                                                    text-slate-400"
+                                            >
+                                                {{ $fact['label'] }}
+                                            </p>
+
+                                            <p
+                                                class="mt-2 text-sm font-bold
+                                                    text-slate-950
+                                                    dark:text-white"
+                                            >
+                                                {{ $fact['value'] }}
+                                            </p>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div
+                                class="mt-7 grid gap-5 border-t
+                                    border-slate-100 pt-7
+                                    dark:border-slate-800 sm:grid-cols-2"
+                            >
+                                @if ($publicProfile->work_preference)
+                                    <div>
+                                        <p
+                                            class="text-xs font-bold uppercase
+                                                tracking-[0.14em]
+                                                text-slate-400"
+                                        >
+                                            Work Preference
+                                        </p>
+
+                                        <p
+                                            class="mt-2 text-sm font-semibold
+                                                text-slate-700
+                                                dark:text-slate-300"
+                                        >
+                                            {{ $publicProfile->work_preference }}
+                                        </p>
+                                    </div>
+                                @endif
+
+                                @if (! empty($publicProfile->languages))
+                                    <div>
+                                        <p
+                                            class="text-xs font-bold uppercase
+                                                tracking-[0.14em]
+                                                text-slate-400"
+                                        >
+                                            Languages
+                                        </p>
+
+                                        <p
+                                            class="mt-2 text-sm font-semibold
+                                                text-slate-700
+                                                dark:text-slate-300"
+                                        >
+                                            {{ implode(
+                                                ', ',
+                                                $publicProfile->languages
+                                            ) }}
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="mt-8 flex flex-wrap gap-3">
+                                @if ($publicProfile->public_email)
+                                    <a
+                                        href="mailto:{{ $publicProfile->public_email }}"
+                                        class="rounded-xl bg-[#2f6f61] px-5 py-3
+                                            text-sm font-semibold text-white
+                                            transition hover:bg-[#265c51]"
+                                    >
+                                        Contact Me
+                                    </a>
+                                @endif
+
+                                @if ($publicProfile->cv_url)
+                                    <a
+                                        href="{{ $publicProfile->cv_url }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="rounded-xl border border-[#7fac9f]
+                                            px-5 py-3 text-sm font-semibold
+                                            text-[#2f6f61] transition
+                                            hover:bg-[#eef5f2]
+                                            dark:text-emerald-300
+                                            dark:hover:bg-slate-800"
+                                    >
+                                        View CV
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Current focus --}}
+                    @if (! empty($publicProfile->current_focus))
+                        <div
+                            class="relative mt-10 border-t border-slate-100
+                                pt-8 dark:border-slate-800"
+                        >
+                            <p
+                                class="text-xs font-bold uppercase
+                                    tracking-[0.16em] text-slate-400"
+                            >
+                                Current Focus
+                            </p>
+
+                            <div
+                                class="mt-4 grid gap-3 md:grid-cols-3"
+                            >
+                                @foreach (
+                                    $publicProfile->current_focus
+                                    as $focus
+                                )
+                                    <div
+                                        class="flex items-center gap-3 rounded-2xl
+                                            bg-white p-4 shadow-sm ring-1
+                                            ring-slate-100
+                                            dark:bg-slate-800
+                                            dark:ring-white/5"
+                                    >
+                                        <span
+                                            class="h-2.5 w-2.5 shrink-0
+                                                rounded-full bg-[#7fac9f]"
+                                        ></span>
+
+                                        <span
+                                            class="text-sm font-bold
+                                                text-slate-700
+                                                dark:text-slate-200"
+                                        >
+                                            {{ $focus }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Education history --}}
+                    @if ($publicProfile->educations->isNotEmpty())
+                        <div
+                            class="relative mt-10 border-t border-slate-100
+                                pt-8 dark:border-slate-800"
+                        >
+                            <div>
+                                <p
+                                    class="text-sm font-bold uppercase
+                                        tracking-[0.2em] text-[#2f6f61]
+                                        dark:text-emerald-300"
+                                >
+                                    Education Journey
+                                </p>
+
+                                <h3
+                                    class="mt-3 text-2xl font-black
+                                        text-slate-950 dark:text-white"
+                                >
+                                    Academic background
+                                </h3>
+                            </div>
+
+                            <div class="mt-6 space-y-4">
+                                @foreach (
+                                    $publicProfile->educations
+                                    as $education
+                                )
+                                    <article
+                                        class="grid gap-5 rounded-2xl
+                                            border border-slate-100 p-5
+                                            dark:border-slate-800
+                                            md:grid-cols-[150px_1fr]"
+                                    >
+                                        <div>
+                                            <p
+                                                class="text-sm font-bold
+                                                    text-[#2f6f61]
+                                                    dark:text-emerald-300"
+                                            >
+                                                {{ $education->start_year ?: '?' }}
+                                                —
+                                                {{ $education->end_year
+                                                    ?: 'Present' }}
+                                            </p>
+
+                                            <p
+                                                class="mt-2 text-xs font-semibold
+                                                    uppercase tracking-[0.12em]
+                                                    text-slate-400"
+                                            >
+                                                {{ $education->level }}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div
+                                                class="flex flex-col gap-3
+                                                    sm:flex-row
+                                                    sm:items-start
+                                                    sm:justify-between"
+                                            >
+                                                <div>
+                                                    <h4
+                                                        class="text-lg font-bold
+                                                            text-slate-950
+                                                            dark:text-white"
+                                                    >
+                                                        {{ $education->institution }}
+                                                    </h4>
+
+                                                    @if ($education->major)
+                                                        <p
+                                                            class="mt-1 text-sm
+                                                                font-semibold
+                                                                text-[#2f6f61]
+                                                                dark:text-emerald-300"
+                                                        >
+                                                            {{ $education->major }}
+                                                        </p>
+                                                    @endif
+                                                </div>
+
+                                                @if ($education->gpa)
+                                                    <span
+                                                        class="shrink-0 rounded-full
+                                                            bg-[#eef5f2]
+                                                            px-3 py-1 text-xs
+                                                            font-bold
+                                                            text-[#2f6f61]
+                                                            dark:bg-emerald-950
+                                                            dark:text-emerald-300"
+                                                    >
+                                                        GPA {{ $education->gpa }}
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            @if ($education->description)
+                                                <p
+                                                    class="mt-4 text-sm leading-7
+                                                        text-slate-600
+                                                        dark:text-slate-300"
+                                                >
+                                                    {{ $education->description }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    </article>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </section>
+        @endif
+
     {{-- LOWER 3D OVERLAY SECTION --}}
     <section
         id="portfolio"

@@ -119,66 +119,66 @@ class Index extends Component
     }
 
     public function render(): View
-    {
-        $baseQuery = Project::query()
-            ->when(
-                $this->search !== '',
-                function ($query): void {
-                    $query->where(
-                        function ($subQuery): void {
-                            $keyword = '%'
-                                . $this->search
-                                . '%';
+        {
+            $baseQuery = Project::query()
+                ->when(
+                    $this->search !== '',
+                    function ($query): void {
+                        $query->where(
+                            function ($subQuery): void {
+                                $keyword = '%' . $this->search . '%';
 
-                            $subQuery
-                                ->where(
-                                    'name',
-                                    'like',
-                                    $keyword
-                                )
-                                ->orWhere(
-                                    'category',
-                                    'like',
-                                    $keyword
-                                )
-                                ->orWhere(
-                                    'client',
-                                    'like',
-                                    $keyword
-                                )
-                                ->orWhere(
-                                    'description',
-                                    'like',
-                                    $keyword
-                                );
-                        }
-                    );
-                }
-            )
-            ->latest();
+                                $subQuery
+                                    ->where('name', 'like', $keyword)
+                                    ->orWhere('category', 'like', $keyword)
+                                    ->orWhere('client', 'like', $keyword)
+                                    ->orWhere('description', 'like', $keyword);
+                            }
+                        );
+                    }
+                )
+                ->latest();
 
-        return view('livewire.landing.index', [
-            'publicProfile' => Profile::query()
-                ->latest()
-                ->first(),
+            /*
+            * Hanya mengambil profil yang telah ditentukan
+            * sebagai profil publik.
+            */
+            $publicProfile = Profile::query()
+                ->where('is_public', true)
+                ->with([
+                    'educations' => function ($query): void {
+                        $query
+                            ->where('is_visible', true)
+                            ->orderBy('sort_order')
+                            ->orderByDesc('end_year')
+                            ->orderByDesc('start_year');
+                    },
+                ])
+                ->first();
 
-            'totalProjects' => Project::query()->count('*'),
+            return view('livewire.landing.index', [
+                'publicProfile' => $publicProfile,
 
-            'totalLikes' => Project::query()->sum('likes'),
+                'totalProjects' => Project::query()
+                    ->count('*'),
 
-            'featured' => (clone $baseQuery)->first(),
+                'totalLikes' => Project::query()
+                    ->sum('likes'),
 
-            'projects' => (clone $baseQuery)
-                ->take(6)
-                ->get(),
+                'featured' => (clone $baseQuery)
+                    ->first(),
 
-            'certificates' => Certificate::query()
-                ->visible()
-                ->latest()
-                ->take(6)
-                ->get(),
-        ]);
-    }
+                'projects' => (clone $baseQuery)
+                    ->take(6)
+                    ->get(),
+
+                'certificates' => Certificate::query()
+                    ->visible()
+                    ->latest()
+                    ->take(6)
+                    ->get(),
+            ]);
+        }
 
     /**
      * Menghasilkan hash stabil untuk browser pengunjung.
