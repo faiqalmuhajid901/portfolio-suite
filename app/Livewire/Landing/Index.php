@@ -2,9 +2,6 @@
 
 namespace App\Livewire\Landing;
 
-use App\Models\Education;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 use App\Models\Certificate;
 use App\Models\Profile;
 use App\Models\Project;
@@ -21,9 +18,7 @@ class Index extends Component
     public string $search = '';
 
     /**
-     * Daftar project yang sudah diberi like oleh browser ini.
-     *
-     * Digunakan untuk menonaktifkan tombol setelah berhasil like.
+     * Daftar ID project yang sudah diberi like oleh browser ini.
      *
      * @var array<int, int>
      */
@@ -37,8 +32,7 @@ class Index extends Component
             ->where('visitor_hash', $visitorHash)
             ->pluck('project_id')
             ->map(
-                static fn (mixed $projectId): int =>
-                    (int) $projectId
+                static fn (mixed $projectId): int => (int) $projectId
             )
             ->values()
             ->all();
@@ -47,8 +41,8 @@ class Index extends Component
     public function like(int $projectId): void
     {
         /*
-         * Hentikan request lebih awal apabila browser ini
-         * sudah tercatat memberikan like.
+         * Hentikan proses ketika browser ini sudah
+         * memberikan like pada project yang sama.
          */
         if (
             in_array(
@@ -75,11 +69,6 @@ class Index extends Component
                 $projectId,
                 $visitorHash
             ): bool {
-                /*
-                 * insertOrIgnore mengembalikan 1 apabila record baru
-                 * berhasil dibuat, dan 0 apabila unique constraint
-                 * menemukan bahwa visitor sudah pernah like.
-                 */
                 $inserted = DB::table('project_likes')
                     ->insertOrIgnore([
                         'project_id' => $projectId,
@@ -100,12 +89,6 @@ class Index extends Component
             }
         );
 
-        /*
-         * Tetap tandai tombol sebagai sudah liked.
-         *
-         * Kondisi kedua menangani kasus user menekan like
-         * dari dua tab secara hampir bersamaan.
-         */
         $likeExists = $wasInserted
             || DB::table('project_likes')
                 ->where('project_id', $projectId)
@@ -122,96 +105,96 @@ class Index extends Component
     }
 
     public function render(): View
-        {
-            $baseQuery = Project::query()
-                ->when(
-                    $this->search !== '',
-                    function ($query): void {
-                        $query->where(
-                            function ($subQuery): void {
-                                $keyword = '%' . $this->search . '%';
+    {
+        $baseQuery = Project::query()
+            ->when(
+                $this->search !== '',
+                function ($query): void {
+                    $query->where(
+                        function ($subQuery): void {
+                            $keyword = '%' . $this->search . '%';
 
-                                $subQuery
-                                    ->where(
-                                        'name',
-                                        'like',
-                                        $keyword
-                                    )
-                                    ->orWhere(
-                                        'category',
-                                        'like',
-                                        $keyword
-                                    )
-                                    ->orWhere(
-                                        'client',
-                                        'like',
-                                        $keyword
-                                    )
-                                    ->orWhere(
-                                        'description',
-                                        'like',
-                                        $keyword
-                                    );
-                            }
-                        );
-                    }
-                )
-                ->latest();
+                            $subQuery
+                                ->where(
+                                    'name',
+                                    'like',
+                                    $keyword
+                                )
+                                ->orWhere(
+                                    'category',
+                                    'like',
+                                    $keyword
+                                )
+                                ->orWhere(
+                                    'client',
+                                    'like',
+                                    $keyword
+                                )
+                                ->orWhere(
+                                    'description',
+                                    'like',
+                                    $keyword
+                                );
+                        }
+                    );
+                }
+            )
+            ->latest();
 
-            /*
-            * Ambil profil beserta pendidikan yang boleh
-            * ditampilkan pada halaman publik.
-            */
-            $publicProfile = Profile::query()
-                ->with([
-                    'educations' => function ($query): void {
-                        $query
-                            ->where('is_visible', true)
-                            ->orderBy('sort_order')
-                            ->orderByDesc('end_year')
-                            ->orderByDesc('start_year');
-                    },
-                ])
+        /*
+         * Ambil profil beserta pendidikan yang memang
+         * diizinkan tampil pada halaman publik.
+         */
+        $publicProfile = Profile::query()
+            ->with([
+                'educations' => function ($query): void {
+                    $query
+                        ->where('is_visible', true)
+                        ->orderBy('sort_order')
+                        ->orderByDesc('end_year')
+                        ->orderByDesc('start_year');
+                },
+            ])
+            ->latest()
+            ->first();
+
+        /*
+         * Blade menggunakan variabel $educations.
+         * Variabel ini wajib selalu berupa Collection,
+         * termasuk ketika belum ada profil.
+         */
+        $educations = $publicProfile?->educations
+            ?? collect();
+
+        return view('livewire.landing.index', [
+            'publicProfile' => $publicProfile,
+            'educations' => $educations,
+
+            'totalProjects' => Project::query()
+                ->count(),
+
+            'totalLikes' => Project::query()
+                ->sum('likes'),
+
+            'featured' => (clone $baseQuery)
+                ->first(),
+
+            'projects' => (clone $baseQuery)
+                ->take(6)
+                ->get(),
+
+            'certificates' => Certificate::query()
+                ->visible()
                 ->latest()
-                ->first();
-
-            /*
-            * Variabel ini wajib dikirim karena Blade
-            * menggunakan $educations.
-            */
-            $educations = $publicProfile?->educations
-                ?? collect();
-
-            return view('livewire.landing.index', [
-                'publicProfile' => $publicProfile,
-
-                'educations' => $educations,
-
-                'totalProjects' => Project::query()
-                    ->count(),
-
-                'totalLikes' => Project::query()
-                    ->sum('likes'),
-
-                'featured' => (clone $baseQuery)
-                    ->first(),
-
-                'projects' => (clone $baseQuery)
-                    ->take(6)
-                    ->get(),
-
-                'certificates' => Certificate::query()
-                    ->visible()
-                    ->latest()
-                    ->take(6)
-                    ->get(),
-            ]);
-        }
+                ->take(6)
+                ->get(),
+        ]);
+    }
 
     /**
      * Menghasilkan hash stabil untuk browser pengunjung.
      *
-     * UUID asli disimpan di encrypted cookie Laravel,
+     * UUID asli disimpan dalam encrypted cookie Laravel,
      * sedangkan database hanya menyimpan hasil hash.
      */
     private function visitorHash(): string
@@ -226,9 +209,6 @@ class Index extends Component
         ) {
             $visitorToken = (string) Str::uuid();
 
-            /*
-             * Cookie berlaku selama dua tahun.
-             */
             Cookie::queue(
                 'portfolio_visitor',
                 $visitorToken,
