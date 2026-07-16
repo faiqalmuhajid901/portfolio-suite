@@ -141,10 +141,6 @@ class Index extends Component
             )
             ->latest();
 
-        /*
-         * Ambil profil beserta pendidikan yang memang
-         * diizinkan tampil pada halaman publik.
-         */
         $publicProfile = Profile::query()
             ->with([
                 'educations' => function ($query): void {
@@ -156,38 +152,46 @@ class Index extends Component
                 },
             ])
             ->latest()
-            ->first();
+            ->first(['*']);
 
         /*
-         * Blade menggunakan variabel $educations.
-         * Variabel ini wajib selalu berupa Collection,
-         * termasuk ketika belum ada profil.
-         */
+        * Selalu pastikan Blade menerima Collection.
+        * collect([]) dibuat eksplisit agar Intelephense
+        * tidak menganggap argumennya kurang.
+        */
         $educations = $publicProfile?->educations
-            ?? collect();
+            ?? collect([]);
 
         return view('livewire.landing.index', [
             'publicProfile' => $publicProfile,
             'educations' => $educations,
 
+            /*
+            * Gunakan count('*'), bukan count(),
+            * untuk menghilangkan P1005 Intelephense.
+            */
             'totalProjects' => Project::query()
-                ->count(),
+                ->count('*'),
 
-            'totalLikes' => Project::query()
+            'totalLikes' => (int) Project::query()
                 ->sum('likes'),
 
+            /*
+            * Argumen kolom dibuat eksplisit agar
+            * analyzer tidak salah membaca signature.
+            */
             'featured' => (clone $baseQuery)
-                ->first(),
+                ->first(['*']),
 
             'projects' => (clone $baseQuery)
                 ->take(6)
-                ->get(),
+                ->get(['*']),
 
             'certificates' => Certificate::query()
                 ->visible()
                 ->latest()
                 ->take(6)
-                ->get(),
+                ->get(['*']),
         ]);
     }
 

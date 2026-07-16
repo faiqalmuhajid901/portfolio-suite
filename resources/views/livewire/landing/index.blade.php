@@ -280,17 +280,31 @@
     </section>
 
         @if ($publicProfile)
-            @php
-                $age = $publicProfile->birth_date
-                    ? $publicProfile->birth_date->age
-                    : null;
+           @php
+                /*
+                * birth_date seharusnya Carbon karena cast model.
+                * Nullsafe dipakai agar tanggal kosong tidak fatal.
+                */
+                $age = $publicProfile->birth_date?->age;
+
+                /*
+                * Pastikan nilai JSON benar-benar array sebelum
+                * dipakai oleh implode() dan foreach().
+                */
+                $languages = is_array($publicProfile->languages)
+                    ? $publicProfile->languages
+                    : [];
+
+                $currentFocus = is_array($publicProfile->current_focus)
+                    ? $publicProfile->current_focus
+                    : [];
 
                 $primaryEducation = $educations->first();
 
                 $aboutFacts = collect([
                     [
                         'label' => 'Age',
-                        'value' => $age
+                        'value' => $age !== null
                             ? $age . ' years old'
                             : null,
                     ],
@@ -555,7 +569,7 @@
                                     </div>
                                 @endif
 
-                                @if (! empty($publicProfile->languages))
+                                @if ($languages !== [])
                                     <div>
                                         <p
                                             class="text-xs font-bold uppercase
@@ -570,10 +584,7 @@
                                                 text-slate-700
                                                 dark:text-slate-300"
                                         >
-                                            {{ implode(
-                                                ', ',
-                                                $publicProfile->languages
-                                            ) }}
+                                            {{ implode(', ', $languages) }}
                                         </p>
                                     </div>
                                 @endif
@@ -611,7 +622,7 @@
                     </div>
 
                     {{-- Current focus --}}
-                    @if (! empty($publicProfile->current_focus))
+                    @if ($currentFocus !== [])
                         <div
                             class="relative mt-10 border-t border-slate-100
                                 pt-8 dark:border-slate-800"
@@ -626,10 +637,7 @@
                             <div
                                 class="mt-4 grid gap-3 md:grid-cols-3"
                             >
-                                @foreach (
-                                    $publicProfile->current_focus
-                                    as $focus
-                                )
+                                @foreach ($currentFocus as $focus)
                                     <div
                                         class="flex items-center gap-3 rounded-2xl
                                             bg-white p-4 shadow-sm ring-1
