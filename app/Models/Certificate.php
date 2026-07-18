@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Support\PublicPortfolioCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Certificate extends Model
 {
@@ -18,13 +18,10 @@ class Certificate extends Model
         'is_visible',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'issued_at' => 'date',
-            'is_visible' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'issued_at' => 'date',
+        'is_visible' => 'boolean',
+    ];
 
     public function scopeVisible(Builder $query): Builder
     {
@@ -33,16 +30,7 @@ class Certificate extends Model
 
     protected static function booted(): void
     {
-        static::saved(
-            static function (Certificate $certificate): void {
-                PublicPortfolioCache::forgetCertificates();
-            }
-        );
-
-        static::deleted(
-            static function (Certificate $certificate): void {
-                PublicPortfolioCache::forgetCertificates();
-            }
-        );
+        static::saved(fn () => Cache::forget('phase3:home:certificates'));
+        static::deleted(fn () => Cache::forget('phase3:home:certificates'));
     }
 }

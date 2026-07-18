@@ -2,18 +2,12 @@
 
 namespace App\Models;
 
-use App\Support\PublicPortfolioCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class Education extends Model
 {
-    /**
-     * Nama tabel harus ditetapkan secara eksplisit.
-     *
-     * Tanpa properti ini, Eloquent pada aplikasi Anda
-     * menghasilkan query ke tabel "education".
-     */
     protected $table = 'educations';
 
     protected $fillable = [
@@ -48,16 +42,7 @@ class Education extends Model
 
     protected static function booted(): void
     {
-        static::saved(
-            static function (Education $education): void {
-                PublicPortfolioCache::forgetProfile();
-            }
-        );
-
-        static::deleted(
-            static function (Education $education): void {
-                PublicPortfolioCache::forgetProfile();
-            }
-        );
+        static::saved(fn () => Cache::forget('phase3:home:profile'));
+        static::deleted(fn () => Cache::forget('phase3:home:profile'));
     }
 }
