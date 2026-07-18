@@ -8,19 +8,48 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Livewire\Volt\Volt;
 
-Route::middleware('guest')->group(function () {
-    // GET /login untuk menampilkan halaman login
+/*
+|--------------------------------------------------------------------------
+| Guest Authentication Routes
+|--------------------------------------------------------------------------
+|
+| Registrasi publik sengaja tidak disediakan karena website ini hanya
+| dikelola oleh pemilik. Login dan pemulihan password tetap tersedia.
+|
+*/
+
+Route::middleware('guest')->group(function (): void {
+    /*
+    |--------------------------------------------------------------------------
+    | Login Page
+    |--------------------------------------------------------------------------
+    */
+
     Volt::route('login', 'pages.auth.login')
         ->name('login');
 
-    // POST /login untuk proses login biasa, bukan Livewire
+    /*
+    |--------------------------------------------------------------------------
+    | Login Process
+    |--------------------------------------------------------------------------
+    */
+
     Route::post('login', function (Request $request) {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+            'email' => [
+                'required',
+                'email',
+            ],
+            'password' => [
+                'required',
+                'string',
+            ],
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::attempt(
+            $credentials,
+            $request->boolean('remember')
+        )) {
             throw ValidationException::withMessages([
                 'email' => 'Email atau password salah.',
             ]);
@@ -28,29 +57,72 @@ Route::middleware('guest')->group(function () {
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended(
+            route('dashboard', absolute: false)
+        );
     })->name('login.post');
 
-    Volt::route('register', 'pages.auth.register')
-        ->name('register');
+    /*
+    |--------------------------------------------------------------------------
+    | Password Recovery
+    |--------------------------------------------------------------------------
+    */
 
-    Volt::route('forgot-password', 'pages.auth.forgot-password')
-        ->name('password.request');
+    Volt::route(
+        'forgot-password',
+        'pages.auth.forgot-password'
+    )->name('password.request');
 
-    Volt::route('reset-password/{token}', 'pages.auth.reset-password')
-        ->name('password.reset');
+    Volt::route(
+        'reset-password/{token}',
+        'pages.auth.reset-password'
+    )->name('password.reset');
 });
 
-Route::middleware('auth')->group(function () {
-    Volt::route('verify-email', 'pages.auth.verify-email')
-        ->name('verification.notice');
+/*
+|--------------------------------------------------------------------------
+| Authenticated Account Routes
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
+Route::middleware('auth')->group(function (): void {
+    /*
+    |--------------------------------------------------------------------------
+    | Email Verification
+    |--------------------------------------------------------------------------
+    */
+
+    Volt::route(
+        'verify-email',
+        'pages.auth.verify-email'
+    )->name('verification.notice');
+
+    Route::get(
+        'verify-email/{id}/{hash}',
+        VerifyEmailController::class
+    )
+        ->middleware([
+            'signed',
+            'throttle:6,1',
+        ])
         ->name('verification.verify');
 
-    Volt::route('confirm-password', 'pages.auth.confirm-password')
-        ->name('password.confirm');
+    /*
+    |--------------------------------------------------------------------------
+    | Password Confirmation
+    |--------------------------------------------------------------------------
+    */
+
+    Volt::route(
+        'confirm-password',
+        'pages.auth.confirm-password'
+    )->name('password.confirm');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logout
+    |--------------------------------------------------------------------------
+    */
 
     Route::post('logout', function (Logout $logout) {
         $logout();

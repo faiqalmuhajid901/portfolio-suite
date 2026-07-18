@@ -21,14 +21,21 @@ use App\Livewire\Settings\Index as SettingsIndex;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
-use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-Route::get('/', ProfessionalHome::class)->name('home');
-Route::get('/projects/{slug}', ProjectShow::class)->name('projects.show');
+/*
+|--------------------------------------------------------------------------
+| Public Portfolio Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/', ProfessionalHome::class)
+    ->name('home');
+
+Route::get('/projects/{slug}', ProjectShow::class)
+    ->name('projects.show');
 
 Route::get('/health', HealthController::class)
     ->withoutMiddleware([
@@ -41,39 +48,76 @@ Route::get('/health', HealthController::class)
     ])
     ->name('health');
 
+/*
+|--------------------------------------------------------------------------
+| Authenticated Dashboard Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('/dashboard', Overview::class)->name('dashboard');
-    Route::get('/activity', Activity::class)->name('activity');
-    Route::get('/portfolio', PortfolioIndex::class)->name('portfolio');
-    Route::get('/projects', ProjectIndex::class)->name('projects');
-    Route::get('/certificates', CertificateIndex::class)->name('certificates');
-    Route::get('/profile/about', AboutEditor::class)->name('profile.about');
-    Route::get('/profile', ProfileShow::class)->name('profile.show');
-    Route::get('/settings', SettingsIndex::class)->name('settings');
+    Route::get('/dashboard', Overview::class)
+        ->name('dashboard');
 
-    // Phase 3 professional-content modules.
-    Route::get('/content', ContentIndex::class)->name('content.index');
-    Route::get('/project-case-studies', ProjectCaseStudyIndex::class)->name('project-case-studies.index');
-    Route::get('/careers', CareerIndex::class)->name('careers.index');
-    Route::get('/messages', MessageIndex::class)->name('messages.index');
+    Route::get('/activity', Activity::class)
+        ->name('activity');
 
-    Route::post('/projects/image-upload-url', [
-        ProjectImageUploadController::class,
-        'createSignedUploadUrl',
-    ])->name('projects.image-upload-url');
+    Route::get('/portfolio', PortfolioIndex::class)
+        ->name('portfolio');
 
-    Route::post('/direct-upload-url', [
-        DirectUploadController::class,
-        'createSignedUrl',
-    ])->name('direct-upload-url');
+    Route::get('/projects', ProjectIndex::class)
+        ->name('projects');
+
+    Route::get('/certificates', CertificateIndex::class)
+        ->name('certificates');
+
+    Route::get('/profile/about', AboutEditor::class)
+        ->name('profile.about');
+
+    Route::get('/profile', ProfileShow::class)
+        ->name('profile.show');
+
+    Route::get('/settings', SettingsIndex::class)
+        ->name('settings');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 3 Professional Content
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/content', ContentIndex::class)
+        ->name('content.index');
+
+    Route::get('/project-case-studies', ProjectCaseStudyIndex::class)
+        ->name('project-case-studies.index');
+
+    Route::get('/careers', CareerIndex::class)
+        ->name('careers.index');
+
+    Route::get('/messages', MessageIndex::class)
+        ->name('messages.index');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Upload Endpoints
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/projects/image-upload-url',
+        [
+            ProjectImageUploadController::class,
+            'createSignedUploadUrl',
+        ]
+    )->name('projects.image-upload-url');
+
+    Route::post(
+        '/direct-upload-url',
+        [
+            DirectUploadController::class,
+            'createSignedUrl',
+        ]
+    )->name('direct-upload-url');
 });
-
-Route::post('/logout', function (Request $request) {
-    Auth::guard('web')->logout();
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-
-    return redirect('/');
-})->middleware('auth')->name('logout');
 
 require __DIR__.'/auth.php';

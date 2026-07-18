@@ -2,26 +2,20 @@
 
 namespace Tests\Feature\Auth;
 
-use Livewire\Volt\Volt;
+use Illuminate\Support\Facades\Route;
 
-test('registration screen can be rendered', function () {
-    $response = $this->get('/register');
+test('public registration route is disabled', function () {
+    expect(Route::has('register'))->toBeFalse();
 
-    $response
-        ->assertOk()
-        ->assertSeeVolt('pages.auth.register');
+    $this->get('/register')
+        ->assertNotFound();
 });
 
-test('new users can register', function () {
-    $component = Volt::test('pages.auth.register')
-        ->set('name', 'Test User')
-        ->set('email', 'test@example.com')
-        ->set('password', 'password')
-        ->set('password_confirmation', 'password');
-
-    $component->call('register');
-
-    $component->assertRedirect(route('dashboard', absolute: false));
-
-    $this->assertAuthenticated();
+test('direct registration submission is rejected', function () {
+    $this->post('/register', [
+        'name' => 'Unauthorized User',
+        'email' => 'unauthorized@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertNotFound();
 });
