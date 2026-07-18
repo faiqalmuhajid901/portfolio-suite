@@ -1,7 +1,5 @@
-<div class="min-h-screen bg-slate-100 px-4 py-8 text-slate-950 sm:px-8">
+<div class="text-slate-950 dark:text-slate-100">
     <div class="mx-auto max-w-7xl">
-        <x-phase-three-admin-nav />
-
         @if (session('success'))
             <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 font-semibold text-emerald-900">{{ session('success') }}</div>
         @endif
@@ -16,9 +14,9 @@
             </div>
         </header>
 
-        <div class="mt-7 grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 sm:grid-cols-[1fr_220px]">
-            <input wire:model.live.debounce.300ms="search" type="search" placeholder="Search name, email, company, subject, or message…" class="rounded-2xl border-slate-300 px-4 py-3">
-            <select wire:model.live="status" class="rounded-2xl border-slate-300 px-4 py-3">
+        <div class="mt-7 grid gap-4 rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-5 sm:grid-cols-[1fr_220px]">
+            <input wire:model.live.debounce.300ms="search" type="search" placeholder="Search name, email, company, subject, or message…" class="rounded-2xl border-slate-300 bg-white px-4 py-3 text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+            <select wire:model.live="status" class="rounded-2xl border-slate-300 bg-white px-4 py-3 text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                 <option value="all">All statuses</option>
                 <option value="new">New</option>
                 <option value="read">Read</option>
@@ -28,16 +26,16 @@
 
         <div class="mt-6 space-y-4">
             @forelse ($messages as $message)
-                <article class="rounded-[1.75rem] border bg-white p-6 shadow-sm {{ $message->status === 'new' ? 'border-emerald-400' : 'border-slate-200' }}">
+                <article class="rounded-[1.75rem] border bg-white p-6 shadow-sm dark:bg-slate-900 {{ $message->status === 'new' ? 'border-emerald-400' : 'border-slate-200 dark:border-slate-800' }}">
                     <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-3">
-                                <span class="rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider {{ $message->status === 'new' ? 'bg-emerald-100 text-emerald-800' : ($message->status === 'archived' ? 'bg-slate-200 text-slate-600' : 'bg-blue-100 text-blue-800') }}">{{ $message->status }}</span>
-                                <span class="text-xs font-semibold text-slate-500">{{ $message->created_at->format('d M Y, H:i') }}</span>
+                                <span class="rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider {{ $message->status === 'new' ? 'bg-emerald-100 text-emerald-800' : ($message->status === 'archived' ? 'bg-slate-200 text-slate-600 dark:text-slate-300' : 'bg-blue-100 text-blue-800') }}">{{ $message->status }}</span>
+                                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ $message->created_at->format('d M Y, H:i') }}</span>
                             </div>
                             <h2 class="mt-4 text-xl font-black">{{ $message->subject }}</h2>
-                            <p class="mt-2 text-sm font-semibold text-slate-700">{{ $message->name }} · <a class="text-emerald-700 hover:underline" href="mailto:{{ $message->email }}?subject={{ rawurlencode('Re: '.$message->subject) }}">{{ $message->email }}</a>@if($message->company) · {{ $message->company }}@endif</p>
-                            <p class="mt-5 whitespace-pre-line leading-7 text-slate-600">{{ $message->message }}</p>
+                            <p class="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $message->name }} · <a class="text-emerald-700 hover:underline" href="mailto:{{ $message->email }}?subject={{ rawurlencode('Re: '.$message->subject) }}">{{ $message->email }}</a>@if($message->company) · {{ $message->company }}@endif</p>
+                            <p class="mt-5 whitespace-pre-line leading-7 text-slate-600 dark:text-slate-300">{{ $message->message }}</p>
                         </div>
                         <div class="flex shrink-0 flex-wrap gap-3 text-sm font-black">
                             <a href="mailto:{{ $message->email }}?subject={{ rawurlencode('Re: '.$message->subject) }}" class="rounded-full bg-slate-950 px-5 py-2.5 text-white hover:bg-emerald-700">Reply</a>
@@ -52,7 +50,7 @@
                     </div>
                 </article>
             @empty
-                <p class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-600">No messages match the current filters.</p>
+                <p class="rounded-3xl border border-dashed border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900 p-10 text-center text-slate-600 dark:text-slate-300">No messages match the current filters.</p>
             @endforelse
         </div>
 

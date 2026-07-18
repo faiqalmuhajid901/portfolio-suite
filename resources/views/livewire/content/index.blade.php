@@ -1,7 +1,5 @@
-<div class="min-h-screen bg-slate-100 px-4 py-8 text-slate-950 sm:px-8">
+<div class="text-slate-950 dark:text-slate-100">
     <div class="mx-auto max-w-7xl">
-        <x-phase-three-admin-nav />
-
         <div class="rounded-[2rem] bg-slate-950 p-8 text-white sm:p-10">
             <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-400">Phase 3</p>
             <h1 class="mt-4 text-4xl font-black tracking-tight">Professional content control center</h1>
@@ -15,10 +13,10 @@
                 ['route' => 'careers.index', 'step' => '03', 'title' => 'Career Timeline', 'text' => 'Publish roles, responsibilities, achievements, technologies, and chronological ordering.'],
                 ['route' => 'messages.index', 'step' => '04', 'title' => 'Contact Inbox', 'text' => 'Review, reply to, archive, or delete messages submitted from the public portfolio.'],
             ] as $card)
-                <a href="{{ route($card['route']) }}" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-500">
+                <a href="{{ route($card['route']) }}" class="rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-500">
                     <p class="text-xs font-black uppercase tracking-wider text-emerald-700">Step {{ $card['step'] }}</p>
                     <h2 class="mt-3 text-xl font-black">{{ $card['title'] }}</h2>
-                    <p class="mt-3 text-sm leading-6 text-slate-600">{{ $card['text'] }}</p>
+                    <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{{ $card['text'] }}</p>
                 </a>
             @endforeach
         </div>
