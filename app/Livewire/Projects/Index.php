@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Support\PublicPortfolioCache;
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -293,6 +294,10 @@ class Index extends Component
         $updated = $this->projectQuery()
             ->whereKey($projectId)
             ->update(['status' => $status]);
+
+        if ($updated) {
+            PublicPortfolioCache::forgetProjects();
+        }
 
         session()->flash(
             $updated ? 'success' : 'error',

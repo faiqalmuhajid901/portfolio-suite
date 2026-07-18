@@ -8,13 +8,13 @@ test('profile page is displayed', function () {
 
     $this->actingAs($user);
 
-    $response = $this->get('/profile');
-
-    $response
+    $this->get(route('profile.show'))
         ->assertOk()
-        ->assertSeeVolt('profile.update-profile-information-form')
-        ->assertSeeVolt('profile.update-password-form')
-        ->assertSeeVolt('profile.delete-user-form');
+        ->assertSee($user->name)
+        ->assertSee('Professional Profile')
+        ->assertSee('Technical Arsenal')
+        ->assertSee('Career Trajectory')
+        ->assertSeeLivewire('profile.bio-editor');
 });
 
 test('profile information can be updated', function () {

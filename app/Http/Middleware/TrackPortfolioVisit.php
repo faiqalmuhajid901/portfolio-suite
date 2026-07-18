@@ -99,6 +99,7 @@ class TrackPortfolioVisit
             'build/*',
             'storage/*',
             'up',
+            'health',
             'favicon.ico',
             'robots.txt'
         )) {

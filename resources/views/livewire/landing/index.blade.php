@@ -1,5 +1,6 @@
 <div
     class="min-h-screen overflow-hidden"
+    wire:init="loadLikedProjects"
     x-data="{
         scrollY: window.scrollY,
         mouseX: 0,

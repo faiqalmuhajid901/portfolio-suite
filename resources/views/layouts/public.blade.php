@@ -140,11 +140,28 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-            const heartbeatUrl = @json(route('analytics.heartbeat'));
+            const storageKey = 'portfolio-heartbeat-sent';
+
+            /*
+            * Hanya satu heartbeat per browser tab/session.
+            */
+            if (sessionStorage.getItem(storageKey) === '1') {
+                return;
+            }
+
+            const csrfToken = document.querySelector(
+                'meta[name="csrf-token"]'
+            )?.content;
+
+            const heartbeatUrl = @json(
+                route('analytics.heartbeat')
+            );
 
             const sendHeartbeat = () => {
-                if (document.visibilityState !== 'visible' || !csrfToken) {
+                if (
+                    document.visibilityState !== 'visible'
+                    || !csrfToken
+                ) {
                     return;
                 }
 
@@ -157,14 +174,22 @@
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
                     },
-                }).catch(() => {
-                    // Tracking failure must not disturb the public portfolio.
-                });
+                })
+                    .then(() => {
+                        sessionStorage.setItem(
+                            storageKey,
+                            '1'
+                        );
+                    })
+                    .catch(() => {
+                        /*
+                        * Analytics tidak boleh mengganggu
+                        * halaman publik.
+                        */
+                    });
             };
 
             window.setTimeout(sendHeartbeat, 15000);
-            window.setInterval(sendHeartbeat, 45000);
-            document.addEventListener('visibilitychange', sendHeartbeat);
         });
     </script>
 

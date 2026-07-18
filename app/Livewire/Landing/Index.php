@@ -2,9 +2,8 @@
 
 namespace App\Livewire\Landing;
 
-use App\Models\Certificate;
-use App\Models\Profile;
 use App\Models\Project;
+use App\Support\PublicPortfolioCache;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
@@ -18,32 +17,53 @@ class Index extends Component
     public string $search = '';
 
     /**
-     * Daftar ID project yang sudah diberi like oleh browser ini.
-     *
      * @var array<int, int>
      */
     public array $likedProjectIds = [];
 
-    public function mount(): void
-    {
-        $visitorHash = $this->visitorHash();
+    public bool $likesLoaded = false;
 
-        $this->likedProjectIds = DB::table('project_likes')
-            ->where('visitor_hash', $visitorHash)
-            ->pluck('project_id')
-            ->map(
-                static fn (mixed $projectId): int => (int) $projectId
-            )
-            ->values()
-            ->all();
+    /**
+     * Dipanggil melalui wire:init setelah HTML utama selesai
+     * dirender. Query status like tidak lagi menghambat homepage.
+     */
+    public function loadLikedProjects(): void
+    {
+        if ($this->likesLoaded) {
+            return;
+        }
+
+        $this->likesLoaded = true;
+
+        try {
+            $visitorHash = $this->visitorHash();
+
+            $this->likedProjectIds = DB::table('project_likes')
+                ->where('visitor_hash', $visitorHash)
+                ->pluck('project_id')
+                ->map(
+                    static fn (mixed $projectId): int =>
+                        (int) $projectId
+                )
+                ->values()
+                ->all();
+        } catch (\Throwable $exception) {
+            /*
+             * Gagal memuat status like tidak boleh
+             * menjatuhkan halaman publik.
+             */
+            report($exception);
+
+            $this->likedProjectIds = [];
+        }
     }
 
     public function like(int $projectId): void
     {
-        /*
-         * Hentikan proses ketika browser ini sudah
-         * memberikan like pada project yang sama.
-         */
+        if (! $this->likesLoaded) {
+            $this->loadLikedProjects();
+        }
+
         if (
             in_array(
                 $projectId,
@@ -55,6 +75,7 @@ class Index extends Component
         }
 
         $projectExists = Project::query()
+            ->published()
             ->whereKey($projectId)
             ->exists();
 
@@ -95,108 +116,65 @@ class Index extends Component
                 ->where('visitor_hash', $visitorHash)
                 ->exists();
 
-        if ($likeExists) {
-            $this->likedProjectIds[] = $projectId;
-
-            $this->likedProjectIds = array_values(
-                array_unique($this->likedProjectIds)
-            );
+        if (! $likeExists) {
+            return;
         }
+
+        $this->likedProjectIds[] = $projectId;
+
+        $this->likedProjectIds = array_values(
+            array_unique($this->likedProjectIds)
+        );
+
+        /*
+         * Project cache menyimpan angka like.
+         * Cache harus dibuang setelah increment berhasil.
+         */
+        PublicPortfolioCache::forgetProjects();
     }
 
     public function render(): View
     {
-        $baseQuery = Project::query()
-            ->when(
-                $this->search !== '',
-                function ($query): void {
-                    $query->where(
-                        function ($subQuery): void {
-                            $keyword = '%' . $this->search . '%';
+        $publicProfile = PublicPortfolioCache::profile();
 
-                            $subQuery
-                                ->where(
-                                    'name',
-                                    'like',
-                                    $keyword
-                                )
-                                ->orWhere(
-                                    'category',
-                                    'like',
-                                    $keyword
-                                )
-                                ->orWhere(
-                                    'client',
-                                    'like',
-                                    $keyword
-                                )
-                                ->orWhere(
-                                    'description',
-                                    'like',
-                                    $keyword
-                                );
-                        }
-                    );
-                }
-            )
-            ->latest();
-
-        $publicProfile = Profile::query()
-            ->with([
-                'educations' => function ($query): void {
-                    $query->where('is_visible', true);
-                },
-            ])
-            ->latest()
-            ->first(['*']);
+        $educations = $publicProfile?->getRelation(
+            'educations'
+        ) ?? collect([]);
 
         /*
-        * Selalu pastikan Blade menerima Collection.
-        * collect([]) dibuat eksplisit agar Intelephense
-        * tidak menganggap argumennya kurang.
-        */
-        $educations = $publicProfile?->educations
-            ?? collect([]);
+         * Hanya satu kumpulan proyek:
+         * proyek pertama menjadi featured,
+         * enam sisanya menjadi recent works.
+         */
+        $portfolioProjects = PublicPortfolioCache::projects(
+            $this->search
+        );
+
+        $featured = $portfolioProjects->first();
+
+        $projects = $portfolioProjects
+            ->skip(1)
+            ->take(6)
+            ->values();
 
         return view('livewire.landing.index', [
             'publicProfile' => $publicProfile,
             'educations' => $educations,
 
-            /*
-            * Gunakan count('*'), bukan count(),
-            * untuk menghilangkan P1005 Intelephense.
-            */
-            'totalProjects' => Project::query()
-                ->count('*'),
+            'totalProjects' =>
+                PublicPortfolioCache::projectCount(),
 
-            'totalLikes' => (int) Project::query()
-                ->sum('likes'),
+            'totalLikes' =>
+                PublicPortfolioCache::totalLikes(),
 
-            /*
-            * Argumen kolom dibuat eksplisit agar
-            * analyzer tidak salah membaca signature.
-            */
-            'featured' => (clone $baseQuery)
-                ->first(['*']),
+            'featured' => $featured,
+            'projects' => $projects,
 
-            'projects' => (clone $baseQuery)
-                ->take(6)
-                ->get(['*']),
-
-            'certificates' => Certificate::query()
-                ->visible()
-                ->latest()
-                ->take(6)
-                ->get(['*']),
+            'certificates' =>
+                PublicPortfolioCache::certificates(),
         ]);
     }
 
-    /**
-     * Menghasilkan hash stabil untuk browser pengunjung.
-     *
-     * UUID asli disimpan dalam encrypted cookie Laravel,
-     * sedangkan database hanya menyimpan hasil hash.
-     */
     private function visitorHash(): string
     {
         $visitorToken = request()->cookie(

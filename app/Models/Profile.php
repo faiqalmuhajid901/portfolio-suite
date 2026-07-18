@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\PublicPortfolioCache;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,6 +45,11 @@ class Profile extends Model
         ];
     }
 
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('is_public', true);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -54,5 +61,20 @@ class Profile extends Model
             ->orderBy('sort_order')
             ->orderByDesc('end_year')
             ->orderByDesc('start_year');
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(
+            static function (Profile $profile): void {
+                PublicPortfolioCache::forgetProfile();
+            }
+        );
+
+        static::deleted(
+            static function (Profile $profile): void {
+                PublicPortfolioCache::forgetProfile();
+            }
+        );
     }
 }

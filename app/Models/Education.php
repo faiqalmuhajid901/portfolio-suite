@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PublicPortfolioCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -43,5 +44,20 @@ class Education extends Model
     public function profile(): BelongsTo
     {
         return $this->belongsTo(Profile::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(
+            static function (Education $education): void {
+                PublicPortfolioCache::forgetProfile();
+            }
+        );
+
+        static::deleted(
+            static function (Education $education): void {
+                PublicPortfolioCache::forgetProfile();
+            }
+        );
     }
 }

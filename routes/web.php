@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use App\Http\Controllers\DirectUploadController;
 use App\Http\Controllers\ProjectImageUploadController;
 use App\Livewire\Certificates\Index as CertificateIndex;
@@ -14,9 +17,24 @@ use App\Livewire\Settings\Index as SettingsIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HealthController;
+use App\Http\Middleware\TrackPortfolioVisit;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', LandingIndex::class)
     ->name('home');
+
+Route::get('/health', HealthController::class)
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+        TrackPortfolioVisit::class,
+    ])
+    ->name('health');
 
 Route::post(
     '/analytics/heartbeat',
@@ -83,7 +101,7 @@ Route::post('/logout', function (Request $request) {
 
     $request->session()->regenerateToken();
 
-    return redirect('/login');
+    return redirect('/');
 })
     ->middleware('auth')
     ->name('logout');
