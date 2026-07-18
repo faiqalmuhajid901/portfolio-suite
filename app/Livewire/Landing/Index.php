@@ -134,46 +134,106 @@ class Index extends Component
     }
 
     public function render(): View
-    {
-        $publicProfile = PublicPortfolioCache::profile();
+        {
+            $publicProfile =
+                PublicPortfolioCache::profile();
 
-        $educations = $publicProfile?->getRelation(
-            'educations'
-        ) ?? collect([]);
+            $educations =
+                $publicProfile?->getRelation(
+                    'educations'
+                ) ?? collect([]);
 
-        /*
-         * Hanya satu kumpulan proyek:
-         * proyek pertama menjadi featured,
-         * enam sisanya menjadi recent works.
-         */
-        $portfolioProjects = PublicPortfolioCache::projects(
-            $this->search
-        );
+            /*
+            * Seluruh project publik diambil satu kali dari
+            * cache. Pencarian selanjutnya dilakukan di browser.
+            */
+            $portfolioProjects =
+                PublicPortfolioCache::projects();
 
-        $featured = $portfolioProjects->first();
+            $featured =
+                $portfolioProjects->first();
 
-        $projects = $portfolioProjects
-            ->skip(1)
-            ->take(6)
-            ->values();
+            $projects =
+                $portfolioProjects
+                    ->skip(1)
+                    ->take(6)
+                    ->values();
 
-        return view('livewire.landing.index', [
-            'publicProfile' => $publicProfile,
-            'educations' => $educations,
+            /*
+            * Hanya index teks ringan yang dikirim ke browser.
+            * Tidak ada deskripsi HTML atau data sensitif.
+            */
+            $projectSearchIndex =
+                $portfolioProjects
+                    ->map(
+                        function (
+                            Project $project
+                        ): array {
+                            $tags = is_array(
+                                $project->tags
+                            )
+                                ? implode(
+                                    ' ',
+                                    $project->tags
+                                )
+                                : '';
 
-            'totalProjects' =>
-                PublicPortfolioCache::projectCount(),
+                            $searchableContent =
+                                implode(
+                                    ' ',
+                                    array_filter([
+                                        $project->name,
+                                        $project->category,
+                                        $project->client,
+                                        $project->description,
+                                        $tags,
+                                    ])
+                                );
 
-            'totalLikes' =>
-                PublicPortfolioCache::totalLikes(),
+                            return [
+                                'id' => (int) $project->id,
 
-            'featured' => $featured,
-            'projects' => $projects,
+                                'search' => Str::of(
+                                    $searchableContent
+                                )
+                                    ->lower()
+                                    ->squish()
+                                    ->toString(),
+                            ];
+                        }
+                    )
+                    ->values()
+                    ->all();
 
-            'certificates' =>
-                PublicPortfolioCache::certificates(),
-        ]);
-    }
+            return view(
+                'livewire.landing.index',
+                [
+                    'publicProfile' =>
+                        $publicProfile,
+
+                    'educations' =>
+                        $educations,
+
+                    'totalProjects' =>
+                        PublicPortfolioCache::projectCount(),
+
+                    'totalLikes' =>
+                        PublicPortfolioCache::totalLikes(),
+
+                    'featured' =>
+                        $featured,
+
+                    'projects' =>
+                        $projects,
+
+                    'projectSearchIndex' =>
+                        $projectSearchIndex,
+
+                    'certificates' =>
+                        PublicPortfolioCache::certificates(),
+                ]
+            );
+        }
 
     private function visitorHash(): string
     {
