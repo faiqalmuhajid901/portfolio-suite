@@ -7,8 +7,8 @@
     $aboutDescription = $profile?->about_description ?: ($profile?->bio ?: 'My work connects user needs, technical constraints, delivery quality, and long-term maintainability.');
 @endphp
 
-<div>
-    <section class="relative overflow-hidden border-b border-slate-200">
+<div class="phase3-public">
+    <section id="overview" class="scroll-mt-24 relative overflow-hidden border-b border-slate-200">
         <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(15,23,42,0.08),transparent_35%)]"></div>
         <div class="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.25fr_.75fr] lg:items-center lg:px-10 lg:py-32">
             <div>
@@ -24,7 +24,7 @@
                     {{ $heroDescription }}
                 </p>
                 <div class="mt-10 flex flex-wrap gap-4">
-                    <a href="#work" class="rounded-full bg-slate-950 px-7 py-3.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-emerald-700">View selected work</a>
+                    <a href="#portfolio" class="rounded-full bg-slate-950 px-7 py-3.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-emerald-700">View selected work</a>
                     <a href="#contact" class="rounded-full border border-slate-300 bg-white px-7 py-3.5 text-sm font-bold text-slate-950 transition hover:border-slate-950">Discuss a project</a>
                     @if ($profile?->cv_url)
                         <a href="{{ $profile->cv_url }}" target="_blank" rel="noopener noreferrer" class="px-3 py-3.5 text-sm font-bold text-slate-600 hover:text-slate-950">View résumé ↗</a>
@@ -96,7 +96,7 @@
         </div>
     </section>
 
-    <section id="work" class="scroll-mt-24">
+    <section id="portfolio" class="scroll-mt-24" x-data="{ projectSearch: '' }">
         <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
             <div class="max-w-3xl">
                 <p class="text-sm font-black uppercase tracking-[0.22em] text-emerald-700">Selected work</p>
@@ -104,9 +104,43 @@
                 <p class="mt-5 text-lg leading-8 text-slate-600">The emphasis is no longer popularity metrics. Each selected project shows the role, problem, solution, stack, and result.</p>
             </div>
 
+            <div class="mt-8 max-w-xl">
+                <label for="project-search" class="sr-only">Search selected projects</label>
+                <div class="relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 grid w-12 place-items-center text-slate-400" aria-hidden="true">⌕</span>
+                    <input
+                        id="project-search"
+                        type="search"
+                        x-model.debounce.150ms="projectSearch"
+                        autocomplete="off"
+                        placeholder="Search by project, role, category, or technology"
+                        class="w-full rounded-2xl border border-slate-300 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:border-emerald-400 dark:focus:ring-emerald-900"
+                    >
+                </div>
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Filtering happens instantly in your browser without another server request.
+                </p>
+            </div>
+
             <div class="mt-12 grid gap-7 lg:grid-cols-2">
                 @forelse ($projects as $project)
-                    <article class="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                    @php
+                        $projectSearchText = \Illuminate\Support\Str::lower(implode(' ', array_filter([
+                            $project->name,
+                            $project->role,
+                            $project->category,
+                            $project->client,
+                            $project->summary,
+                            $project->description,
+                            implode(' ', $project->tags ?? []),
+                        ])));
+                    @endphp
+                    <article
+                        x-show="projectSearch.trim() === '' || @js($projectSearchText).includes(projectSearch.trim().toLowerCase())"
+                        x-transition.opacity
+                        x-cloak
+                        class="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                    >
                         <div class="aspect-[16/10] overflow-hidden bg-slate-100">
                             <img src="{{ $project->image }}" alt="Preview of {{ $project->name }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]" loading="lazy">
                         </div>
