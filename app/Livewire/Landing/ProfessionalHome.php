@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Landing;
 
+use App\Support\SeoManager;
 use App\Models\Career;
 use App\Models\Certificate;
 use App\Models\Education;

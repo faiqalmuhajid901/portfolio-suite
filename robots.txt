@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /content
+Disallow: /projects
+Disallow: /project-case-studies
+Disallow: /careers
+Disallow: /messages
+Disallow: /profile
+Disallow: /settings
+Disallow: /login
+
+Sitemap: https://muhammadfaiq-portfolio.vercel.app/sitemap.xml
